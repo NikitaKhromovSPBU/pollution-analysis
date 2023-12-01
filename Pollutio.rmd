@@ -18,7 +18,7 @@ getmode <- function(v) {
 ```
 # Загрука данных
 ```{r}
-df <- read.csv("../stat2021_sm/POLLUTIO.STD/POLLUTIO.txt", sep="\t", dec=",")
+df <- read.csv("../stat2021_sm/POLLUTIO.STD/POLLUTIO.txt", sep = "\t", dec = ",")
 df |> head(5)
 ```
 16 признаков, 60 наблюдений.
@@ -52,7 +52,9 @@ df |>
 
 ## Статистическая сводка
 ```{r}
-describe(df, type = 1, check = FALSE, range = FALSE) |> as.data.frame() |> mutate(vars = NULL)
+describe(df, type = 1, check = FALSE, range = FALSE) |>
+  as.data.frame() |>
+  mutate(vars = NULL)
 ```
 
 ## Переход к логарифму
@@ -77,16 +79,34 @@ df.log |>
 ```
 ## Статистическая сводка для логарифмированных данных
 ```{r}
-describe(df.log, type = 1, check = FALSE, range = FALSE) |> as.data.frame() |> mutate(vars = NULL)
+describe(df.log, type = 1, check = FALSE, range = FALSE) |>
+  as.data.frame() |>
+  mutate(vars = NULL)
 ```
 
 Видно, что гистограммы прологарифмированных признаков стали чуть больше похожи на плотность нормального распределения, и
 их коэффициенты асимметрии и эксцесса стали ближе к 0.
 
 ## Выявление и удаление выбросов
+
+
 На графиках зависимостей параметров загрязнения (***HC, NOX, SO2***) и влажности (***HUMID***) можно увидеть отклонения от закономерностей.
-Например на графике зависимости ***SO2*** от ***NOX*** выделяются точки справа от "облака" и под ним, а на графике ***HUMID*** от ***NOX***
+Например на графике зависимости ***SO2*** от ***NOX*** выделяются точки справа от "облака" и под ним, которые портят линейную зависимость этих признаков, а на графике ***HUMID*** от ***NOX***
 выделяются точки над и под "облаком".
+
+Чтобы объяснить неоднородность выборки относительно зависимости ***SO2*** от ***NOX***, добавим
+к данным новую переменную - разницу между июльской и январской температурами и покрасим точки в
+зависимости от значения этого признака.
+```{r}
+df.log <- df.log |> mutate(TDIFF = JULT - JANT)
+df.log |>
+  scatterPlotMatrix(corrPlotType = "Text",
+                    plotProperties = list(noCatColor = "Indigo"),
+                    slidersPosition = list(dimCount = 6, xStartingDimIndex = 1, yStartingDimIndex = 1),
+                    zAxisDim = "TDIFF",
+                    controlWidgets = TRUE, height = 1050, width = 1000)
+```
+Видно, что эта неоднородность объясняется новым признаком разброса температур.
 
 Точки, в которых логарифм ***SO2*** равен 0, было решено оставить, так как этих точек много, и они являются выбросами только
 относительно признака ***SO2***, который, возможно, будет убран из дальнейшего анализа (за счёт сильной корреляции с другими параметрами загрязнения).
@@ -114,5 +134,7 @@ df.clean |>
 
 ## Статистическая сводка после удаления выбросов:
 ```{r}
-describe(df.clean, type = 1, check = FALSE, range = FALSE) |> as.data.frame() |> mutate(vars = NULL)
+describe(df.clean, type = 1, check = FALSE, range = FALSE) |>
+  as.data.frame() |>
+  mutate(vars = NULL)
 ```
