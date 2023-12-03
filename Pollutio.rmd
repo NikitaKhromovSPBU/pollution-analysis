@@ -118,7 +118,7 @@ df.log |>
 
 ### Графики после удаления выбросов:
 ```{r}
-pollution.outliers <- c(29, 47, 48, 49)
+pollution.outliers <- c(21, 29, 47, 48, 49)
 humidity.outliers <- c(18, 29, 41, 48, 49, 50)
 so2.zero.outliers <- c(25, 32, 37, 56)
 jant.outliers <- c(32)
@@ -138,3 +138,113 @@ describe(df.clean, type = 1, check = FALSE, range = FALSE) |>
   as.data.frame() |>
   mutate(vars = NULL)
 ```
+
+# Удаление признаков
+```{r}
+df.new <- df.clean |> select(-HC, -SO2, -JANT, -JULT, -TDIFF, -WWDRK, -HUMID)
+df.new |> colnames() |> print()
+```
+
+# Описание распределений признаков
+## NP-plots
+```{r}
+df.new |> ggplot(aes(sample = MORT)) +
+  stat_qq() +
+  stat_qq_line() +
+  ggtitle("Normal probability plot for MORT")
+df.new |> ggplot(aes(sample = NOX)) +
+  stat_qq() +
+  stat_qq_line() +
+  ggtitle("Normal probability plot for NOX")
+df.new |> ggplot(aes(sample = POOR)) +
+  stat_qq() +
+  stat_qq_line() +
+  ggtitle("Normal probability plot for POOR")
+df.new |> ggplot(aes(sample = NONW)) +
+  stat_qq() +
+  stat_qq_line() +
+  ggtitle("Normal probability plot for NONW")
+df.new |> ggplot(aes(sample = DENS)) +
+  stat_qq() +
+  stat_qq_line() +
+  ggtitle("Normal probability plot for DENS")
+df.new |> ggplot(aes(sample = HOUS)) +
+  stat_qq() +
+  stat_qq_line() +
+  ggtitle("Normal probability plot for HOUS")
+df.new |> ggplot(aes(sample = EDUC)) +
+  stat_qq() +
+  stat_qq_line() +
+  ggtitle("Normal probability plot for EDUC")
+df.new |> ggplot(aes(sample = POPN)) +
+  stat_qq() +
+  stat_qq_line() +
+  ggtitle("Normal probability plot for POPN")
+df.new |> ggplot(aes(sample = OVR65)) +
+  stat_qq() +
+  stat_qq_line() +
+  ggtitle("Normal probability plot for OVR65")
+df.new |> ggplot(aes(sample = PREC)) +
+  stat_qq() +
+  stat_qq_line() +
+  ggtitle("Normal probability plot for PREC")
+```
+
+### Тест $\Large{\chi^2}$ на нормальность ***NOX***
+```{r}
+m <- mean(df.new$NOX)
+s <- sd(df.new$NOX)
+obs.freqs <- table(df.new$NOX)
+n <- nrow(df.new)
+p <- pnorm(as.numeric(names(obs.freqs)), m, s)
+p[length(p)] <- 1
+p <- p - c(0, p[-length(p)])
+for (i in seq_along(p)) {
+  if (p[i] * n < 5 & i != length(p)) {
+    p[i + 1] <- p[i + 1] + p[i]
+    obs.freqs[i + 1] <- obs.freqs[i + 1] + obs.freqs[i]
+    p[i] <- -1
+    obs.freqs[i] <- -1
+  }
+}
+if (tail(p, 1) * n < 5) {
+  p[length(p) - 1] <- p[length(p) - 1] + tail(p, 1)
+  obs.freqs[length(obs.freqs) - 1] <- obs.freqs[length(obs.freqs) - 1] + tail(obs.freqs, 1)
+  p[length(p)] <- -1
+  obs.freqs[length(obs.freqs)] <- -1
+}
+p <- p[p != -1]
+obs.freqs <- obs.freqs[obs.freqs != -1]
+chisq.test(obs.freqs, p = p)
+```
+### Тест Шапиро-Уилка на нормальность ***NOX***\
+```{r}
+shapiro.test(df.new$NOX)
+```
+### Тест Шапиро-Уилка на нормальность ***POPN***
+```{r}
+shapiro.test(df.new$POPN)
+```
+### Тест Шапиро-Уилка на нормальность ***NONW***
+```{r}
+shapiro.test(df.new$NONW)
+```
+### Проверка нормальности признака ***NONW*** до логарифмирования
+```{r}
+df |> ggplot(aes(sample = NONW)) +
+  stat_qq() +
+  stat_qq_line() +
+  ggtitle("Normal probability plot for NONW")
+shapiro.test(df$NONW)
+```
+## PP-plot для смертности
+```{r}
+m <- mean(df.new$MORT)
+s <- sd(df.new$MORT)
+n <- nrow(df.new)
+df.new |> ggplot(aes(x = pnorm(MORT, m, s), y = ecdf(MORT)(MORT))) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, lty = 1) +
+  ggtitle("Normal PP-plot for mortality rate")
+```
+
