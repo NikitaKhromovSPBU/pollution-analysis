@@ -10,6 +10,7 @@ library(dplyr)
 library(scatterPlotMatrix)
 library(corrplot)
 library(psych)
+library(nortest)
 
 getmode <- function(v) {
   uniqv <- unique(v)
@@ -228,6 +229,14 @@ shapiro.test(df.new$POPN)
 ### Тест Шапиро-Уилка на нормальность ***NONW***
 ```{r}
 shapiro.test(df.new$NONW)
+```
+### Тест Лиллиефорcа на нормальность ***NONW***
+```{r}
+lillie.test(df.new$NONW)
+```
+### AD-тест на нормальность ***NONW***
+```{r}
+ad.test(df.new$NONW)
 ```
 ### Проверка нормальности признака ***NONW*** до логарифмирования
 ```{r}
