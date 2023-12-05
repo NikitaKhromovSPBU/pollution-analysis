@@ -279,6 +279,21 @@ ad.p.df
 ```
 
 ## Тесты на совпадение распределений в группах
+### t-test
 ```{r}
-
+t.p.df <- df.new |> select(NOX, POPN, NONW, MORT, CLIM) |>
+        summarize(NOX = t.test(NOX[CLIM == FALSE], NOX[CLIM == TRUE])$p.value,
+                  POPN = t.test(POPN[CLIM == FALSE], POPN[CLIM == TRUE])$p.value,
+                  NONW = t.test(NONW[CLIM == FALSE], NONW[CLIM == TRUE])$p.value,
+                  MORT = t.test(MORT[CLIM == FALSE], MORT[CLIM == TRUE])$p.value)
+t.p.df
+```
+### Wilcox
+```{r}
+wc.p.df <- df.new |> select(NOX, POPN, NONW, MORT, CLIM) |>
+        summarize(NOX = wilcox.test(NOX[CLIM == FALSE], NOX[CLIM == TRUE])$p.value,
+                  POPN = wilcox.test(POPN[CLIM == FALSE], POPN[CLIM == TRUE])$p.value,
+                  NONW = wilcox.test(NONW[CLIM == FALSE], NONW[CLIM == TRUE])$p.value,
+                  MORT = wilcox.test(MORT[CLIM == FALSE], MORT[CLIM == TRUE])$p.value)
+wc.p.df
 ```
