@@ -277,26 +277,8 @@ ad.p.df <- df.new |> group_by(CLIM) |> select(NOX, POPN, NONW, MORT, CLIM) |>
                   MORT = ad.test(MORT)$p.value)
 ad.p.df
 ```
-### Тест $\chi^2$ на нормальность ***NOX***
+
+## Тесты на совпадение распределений в группах
 ```{r}
-m <- mean(NOX.1)
-s <- sd(NOX.1)
-obs.freqs <- table(NOX.1)
-n <- length(NOX.1)
-p.len <- ceiling(n / 5)
-p <- rep(1 / p.len, p.len)
 
-if (tail(p, 1) * n < 5) {
-  p[length(p) - 1] <- p[length(p) - 1] + tail(p, 1)
-  obs.freqs[length(obs.freqs) - 1] <- obs.freqs[length(obs.freqs) - 1] + tail(obs.freqs, 1)
-  p[length(p)] <- -1
-  obs.freqs[length(obs.freqs)] <- -1
-}
-p <- p[p != -1]
-obs.freqs <- obs.freqs[obs.freqs != -1]
-chisq.test(obs.freqs, p = p)
 ```
-
-
-
-
