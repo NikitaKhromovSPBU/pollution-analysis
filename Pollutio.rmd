@@ -6,6 +6,7 @@ output: html_notebook
 knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 
 library(ggplot2)
+library(ggpubr)
 library(dplyr)
 library(scatterPlotMatrix)
 library(corrplot)
@@ -70,6 +71,16 @@ describe(df, type = 1, check = FALSE, range = FALSE) |>
 
 Были выбраны именно эти признаки так как по виду их гистограмм можно сказать, что их распределения "скошены" вправо, и у
 них подозрительно большие коэффициенты асимметрии и эксцесса.
+
+Например можно проверить на нормальность ***NONW***
+```{r}
+df |> ggplot(aes(sample = NONW)) +
+  stat_qq() +
+  stat_qq_line() +
+  ggtitle("Normal probability plot for NONW")
+shapiro.test(df$NONW)
+```
+
 ```{r}
 df.log <- df |> mutate(DENS = log(DENS), NONW = log(NONW), POOR = log(POOR), HC = log(HC), NOX = log(NOX), SO2 = log(SO2))
 df.log |>
@@ -89,7 +100,6 @@ describe(df.log, type = 1, check = FALSE, range = FALSE) |>
 их коэффициенты асимметрии и эксцесса стали ближе к 0.
 
 ## Выявление и удаление выбросов
-
 
 На графиках зависимостей параметров загрязнения (***HC, NOX, SO2***) и влажности (***HUMID***) можно увидеть отклонения от закономерностей.
 Например на графике зависимости ***SO2*** от ***NOX*** выделяются точки справа от "облака" и под ним, которые портят линейную зависимость этих признаков, а на графике ***HUMID*** от ***NOX***
@@ -147,67 +157,135 @@ df.new |> colnames() |> print()
 ```
 
 # Описание распределений признаков
-## NP-plots
+Добавим новый категориальный признак, разделяющий выборку на группы по количеству осадков (больше/меньше медианы)
 ```{r}
-df.new |> ggplot(aes(sample = MORT)) +
+df.new <- df.new |> mutate(CLIM = PREC > median(PREC))
+```
+## NP-plots для малого количества осадков
+```{r}
+p1 <- df.new |> filter(CLIM == FALSE) |> ggplot(aes(sample = MORT)) +
   stat_qq() +
   stat_qq_line() +
-  ggtitle("Normal probability plot for MORT")
-df.new |> ggplot(aes(sample = NOX)) +
+  ggtitle("MORT")
+p2 <- df.new |> filter(CLIM == FALSE) |> ggplot(aes(sample = NOX)) +
   stat_qq() +
   stat_qq_line() +
-  ggtitle("Normal probability plot for NOX")
-df.new |> ggplot(aes(sample = POOR)) +
+  ggtitle("NOX")
+p3 <- df.new |> filter(CLIM == FALSE) |> ggplot(aes(sample = POOR)) +
   stat_qq() +
   stat_qq_line() +
-  ggtitle("Normal probability plot for POOR")
-df.new |> ggplot(aes(sample = NONW)) +
+  ggtitle("POOR")
+p4 <- df.new |> filter(CLIM == FALSE) |> ggplot(aes(sample = NONW)) +
   stat_qq() +
   stat_qq_line() +
-  ggtitle("Normal probability plot for NONW")
-df.new |> ggplot(aes(sample = DENS)) +
+  ggtitle("NONW")
+p5 <- df.new |> filter(CLIM == FALSE) |> ggplot(aes(sample = DENS)) +
   stat_qq() +
   stat_qq_line() +
-  ggtitle("Normal probability plot for DENS")
-df.new |> ggplot(aes(sample = HOUS)) +
+  ggtitle("DENS")
+p6 <- df.new |> filter(CLIM == FALSE) |> ggplot(aes(sample = HOUS)) +
   stat_qq() +
   stat_qq_line() +
-  ggtitle("Normal probability plot for HOUS")
-df.new |> ggplot(aes(sample = EDUC)) +
+  ggtitle("HOUS")
+p7 <- df.new |> filter(CLIM == FALSE) |> ggplot(aes(sample = EDUC)) +
   stat_qq() +
   stat_qq_line() +
-  ggtitle("Normal probability plot for EDUC")
-df.new |> ggplot(aes(sample = POPN)) +
+  ggtitle("EDUC")
+p8 <- df.new |> filter(CLIM == FALSE) |> ggplot(aes(sample = POPN)) +
   stat_qq() +
   stat_qq_line() +
-  ggtitle("Normal probability plot for POPN")
-df.new |> ggplot(aes(sample = OVR65)) +
+  ggtitle("POPN")
+p9 <- df.new |> filter(CLIM == FALSE) |> ggplot(aes(sample = OVR65)) +
   stat_qq() +
   stat_qq_line() +
-  ggtitle("Normal probability plot for OVR65")
-df.new |> ggplot(aes(sample = PREC)) +
+  ggtitle("OVR65")
+p10 <- df.new |> filter(CLIM == FALSE) |> ggplot(aes(sample = PREC)) +
   stat_qq() +
   stat_qq_line() +
-  ggtitle("Normal probability plot for PREC")
+  ggtitle("PREC")
+ggarrange(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, ncol = 5, nrow = 2)
+```
+## NP-plots для большого количества осадков
+```{r}
+p1 <- df.new |> filter(CLIM == TRUE) |> ggplot(aes(sample = MORT)) +
+  stat_qq() +
+  stat_qq_line() +
+  ggtitle("MORT")
+p2 <- df.new |> filter(CLIM == TRUE) |> ggplot(aes(sample = NOX)) +
+  stat_qq() +
+  stat_qq_line() +
+  ggtitle("NOX")
+p3 <- df.new |> filter(CLIM == TRUE) |> ggplot(aes(sample = POOR)) +
+  stat_qq() +
+  stat_qq_line() +
+  ggtitle("POOR")
+p4 <- df.new |> filter(CLIM == TRUE) |> ggplot(aes(sample = NONW)) +
+  stat_qq() +
+  stat_qq_line() +
+  ggtitle("NONW")
+p5 <- df.new |> filter(CLIM == TRUE) |> ggplot(aes(sample = DENS)) +
+  stat_qq() +
+  stat_qq_line() +
+  ggtitle("DENS")
+p6 <- df.new |> filter(CLIM == TRUE) |> ggplot(aes(sample = HOUS)) +
+  stat_qq() +
+  stat_qq_line() +
+  ggtitle("HOUS")
+p7 <- df.new |> filter(CLIM == TRUE) |> ggplot(aes(sample = EDUC)) +
+  stat_qq() +
+  stat_qq_line() +
+  ggtitle("EDUC")
+p8 <- df.new |> filter(CLIM == TRUE) |> ggplot(aes(sample = POPN)) +
+  stat_qq() +
+  stat_qq_line() +
+  ggtitle("POPN")
+p9 <- df.new |> filter(CLIM == TRUE) |> ggplot(aes(sample = OVR65)) +
+  stat_qq() +
+  stat_qq_line() +
+  ggtitle("OVR65")
+p10 <- df.new |> filter(CLIM == TRUE) |> ggplot(aes(sample = PREC)) +
+  stat_qq() +
+  stat_qq_line() +
+  ggtitle("PREC")
+ggarrange(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, ncol = 5, nrow = 2)
 ```
 
-### Тест $\Large{\chi^2}$ на нормальность ***NOX***
+### Тест Шапиро-Уилка на нормальность признаков сгруппированной выборки
 ```{r}
-m <- mean(df.new$NOX)
-s <- sd(df.new$NOX)
-obs.freqs <- table(df.new$NOX)
-n <- nrow(df.new)
-p <- pnorm(as.numeric(names(obs.freqs)), m, s)
-p[length(p)] <- 1
-p <- p - c(0, p[-length(p)])
-for (i in seq_along(p)) {
-  if (p[i] * n < 5 & i != length(p)) {
-    p[i + 1] <- p[i + 1] + p[i]
-    obs.freqs[i + 1] <- obs.freqs[i + 1] + obs.freqs[i]
-    p[i] <- -1
-    obs.freqs[i] <- -1
-  }
-}
+shap.p.df <- df.new |> group_by(CLIM) |> select(NOX, POPN, NONW, MORT, CLIM) |>
+        summarize(NOX = shapiro.test(NOX)$p.value,
+                  POPN = shapiro.test(POPN)$p.value,
+                  NONW = shapiro.test(NONW)$p.value,
+                  MORT = shapiro.test(MORT)$p.value)
+shap.p.df
+```
+### Тест Лиллиефорса на нормальность признаков сгруппированной выборки
+```{r}
+lil.p.df <- df.new |> group_by(CLIM) |> select(NOX, POPN, NONW, MORT, CLIM) |>
+        summarize(NOX = lillie.test(NOX)$p.value,
+                  POPN = lillie.test(POPN)$p.value,
+                  NONW = lillie.test(NONW)$p.value,
+                  MORT = lillie.test(MORT)$p.value)
+lil.p.df
+```
+### Тест Андерсона-Дарлинга на нормальность признаков сгруппированной выборки
+```{r}
+ad.p.df <- df.new |> group_by(CLIM) |> select(NOX, POPN, NONW, MORT, CLIM) |>
+        summarize(NOX = ad.test(NOX)$p.value,
+                  POPN = ad.test(POPN)$p.value,
+                  NONW = ad.test(NONW)$p.value,
+                  MORT = ad.test(MORT)$p.value)
+ad.p.df
+```
+### Тест $\chi^2$ на нормальность ***NOX***
+```{r}
+m <- mean(NOX.1)
+s <- sd(NOX.1)
+obs.freqs <- table(NOX.1)
+n <- length(NOX.1)
+p.len <- ceiling(n / 5)
+p <- rep(1 / p.len, p.len)
+
 if (tail(p, 1) * n < 5) {
   p[length(p) - 1] <- p[length(p) - 1] + tail(p, 1)
   obs.freqs[length(obs.freqs) - 1] <- obs.freqs[length(obs.freqs) - 1] + tail(obs.freqs, 1)
@@ -218,42 +296,7 @@ p <- p[p != -1]
 obs.freqs <- obs.freqs[obs.freqs != -1]
 chisq.test(obs.freqs, p = p)
 ```
-### Тест Шапиро-Уилка на нормальность ***NOX***\
-```{r}
-shapiro.test(df.new$NOX)
-```
-### Тест Шапиро-Уилка на нормальность ***POPN***
-```{r}
-shapiro.test(df.new$POPN)
-```
-### Тест Шапиро-Уилка на нормальность ***NONW***
-```{r}
-shapiro.test(df.new$NONW)
-```
-### Тест Лиллиефорcа на нормальность ***NONW***
-```{r}
-lillie.test(df.new$NONW)
-```
-### AD-тест на нормальность ***NONW***
-```{r}
-ad.test(df.new$NONW)
-```
-### Проверка нормальности признака ***NONW*** до логарифмирования
-```{r}
-df |> ggplot(aes(sample = NONW)) +
-  stat_qq() +
-  stat_qq_line() +
-  ggtitle("Normal probability plot for NONW")
-shapiro.test(df$NONW)
-```
-## PP-plot для смертности
-```{r}
-m <- mean(df.new$MORT)
-s <- sd(df.new$MORT)
-n <- nrow(df.new)
-df.new |> ggplot(aes(x = pnorm(MORT, m, s), y = ecdf(MORT)(MORT))) +
-  geom_point() +
-  geom_abline(intercept = 0, slope = 1, lty = 1) +
-  ggtitle("Normal PP-plot for mortality rate")
-```
+
+
+
 
