@@ -12,6 +12,7 @@ library(scatterPlotMatrix)
 library(corrplot)
 library(psych)
 library(nortest)
+library(confintr)
 
 getmode <- function(v) {
   uniqv <- unique(v)
@@ -159,47 +160,67 @@ df.new |> colnames() |> print()
 # Описание распределений признаков
 Добавим новый категориальный признак, разделяющий выборку на группы по количеству осадков (больше/меньше медианы)
 ```{r}
-df.new <- df.new |> mutate(CLIM = PREC > median(PREC))
+df.new <- df.new |> mutate(CLIM = factor(ifelse(PREC > median(PREC), ">.5", "<.5"), levels = c("<.5", ">.5")))
 ```
 ## NP-plots для малого количества осадков
 ```{r}
-p1 <- df.new |> filter(CLIM == FALSE) |> ggplot(aes(sample = MORT)) +
+p1 <- df.new |>
+  filter(CLIM == "<.5") |>
+  ggplot(aes(sample = MORT)) +
   stat_qq() +
   stat_qq_line() +
   ggtitle("MORT")
-p2 <- df.new |> filter(CLIM == FALSE) |> ggplot(aes(sample = NOX)) +
+p2 <- df.new |>
+  filter(CLIM == "<.5") |>
+  ggplot(aes(sample = NOX)) +
   stat_qq() +
   stat_qq_line() +
   ggtitle("NOX")
-p3 <- df.new |> filter(CLIM == FALSE) |> ggplot(aes(sample = POOR)) +
+p3 <- df.new |>
+  filter(CLIM == "<.5") |>
+  ggplot(aes(sample = POOR)) +
   stat_qq() +
   stat_qq_line() +
   ggtitle("POOR")
-p4 <- df.new |> filter(CLIM == FALSE) |> ggplot(aes(sample = NONW)) +
+p4 <- df.new |>
+  filter(CLIM == "<.5") |>
+  ggplot(aes(sample = NONW)) +
   stat_qq() +
   stat_qq_line() +
   ggtitle("NONW")
-p5 <- df.new |> filter(CLIM == FALSE) |> ggplot(aes(sample = DENS)) +
+p5 <- df.new |>
+  filter(CLIM == "<.5") |>
+  ggplot(aes(sample = DENS)) +
   stat_qq() +
   stat_qq_line() +
   ggtitle("DENS")
-p6 <- df.new |> filter(CLIM == FALSE) |> ggplot(aes(sample = HOUS)) +
+p6 <- df.new |>
+  filter(CLIM == "<.5") |>
+  ggplot(aes(sample = HOUS)) +
   stat_qq() +
   stat_qq_line() +
   ggtitle("HOUS")
-p7 <- df.new |> filter(CLIM == FALSE) |> ggplot(aes(sample = EDUC)) +
+p7 <- df.new |>
+  filter(CLIM == "<.5") |>
+  ggplot(aes(sample = EDUC)) +
   stat_qq() +
   stat_qq_line() +
   ggtitle("EDUC")
-p8 <- df.new |> filter(CLIM == FALSE) |> ggplot(aes(sample = POPN)) +
+p8 <- df.new |>
+  filter(CLIM == "<.5") |>
+  ggplot(aes(sample = POPN)) +
   stat_qq() +
   stat_qq_line() +
   ggtitle("POPN")
-p9 <- df.new |> filter(CLIM == FALSE) |> ggplot(aes(sample = OVR65)) +
+p9 <- df.new |>
+  filter(CLIM == "<.5") |>
+  ggplot(aes(sample = OVR65)) +
   stat_qq() +
   stat_qq_line() +
   ggtitle("OVR65")
-p10 <- df.new |> filter(CLIM == FALSE) |> ggplot(aes(sample = PREC)) +
+p10 <- df.new |>
+  filter(CLIM == "<.5") |>
+  ggplot(aes(sample = PREC)) +
   stat_qq() +
   stat_qq_line() +
   ggtitle("PREC")
@@ -207,43 +228,63 @@ ggarrange(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, ncol = 5, nrow = 2)
 ```
 ## NP-plots для большого количества осадков
 ```{r}
-p1 <- df.new |> filter(CLIM == TRUE) |> ggplot(aes(sample = MORT)) +
+p1 <- df.new |>
+  filter(CLIM == ">.5") |>
+  ggplot(aes(sample = MORT)) +
   stat_qq() +
   stat_qq_line() +
   ggtitle("MORT")
-p2 <- df.new |> filter(CLIM == TRUE) |> ggplot(aes(sample = NOX)) +
+p2 <- df.new |>
+  filter(CLIM == ">.5") |>
+  ggplot(aes(sample = NOX)) +
   stat_qq() +
   stat_qq_line() +
   ggtitle("NOX")
-p3 <- df.new |> filter(CLIM == TRUE) |> ggplot(aes(sample = POOR)) +
+p3 <- df.new |>
+  filter(CLIM == ">.5") |>
+  ggplot(aes(sample = POOR)) +
   stat_qq() +
   stat_qq_line() +
   ggtitle("POOR")
-p4 <- df.new |> filter(CLIM == TRUE) |> ggplot(aes(sample = NONW)) +
+p4 <- df.new |>
+  filter(CLIM == ">.5") |>
+  ggplot(aes(sample = NONW)) +
   stat_qq() +
   stat_qq_line() +
   ggtitle("NONW")
-p5 <- df.new |> filter(CLIM == TRUE) |> ggplot(aes(sample = DENS)) +
+p5 <- df.new |>
+  filter(CLIM == ">.5") |>
+  ggplot(aes(sample = DENS)) +
   stat_qq() +
   stat_qq_line() +
   ggtitle("DENS")
-p6 <- df.new |> filter(CLIM == TRUE) |> ggplot(aes(sample = HOUS)) +
+p6 <- df.new |>
+  filter(CLIM == ">.5") |>
+  ggplot(aes(sample = HOUS)) +
   stat_qq() +
   stat_qq_line() +
   ggtitle("HOUS")
-p7 <- df.new |> filter(CLIM == TRUE) |> ggplot(aes(sample = EDUC)) +
+p7 <- df.new |>
+  filter(CLIM == ">.5") |>
+  ggplot(aes(sample = EDUC)) +
   stat_qq() +
   stat_qq_line() +
   ggtitle("EDUC")
-p8 <- df.new |> filter(CLIM == TRUE) |> ggplot(aes(sample = POPN)) +
+p8 <- df.new |>
+  filter(CLIM == ">.5") |>
+  ggplot(aes(sample = POPN)) +
   stat_qq() +
   stat_qq_line() +
   ggtitle("POPN")
-p9 <- df.new |> filter(CLIM == TRUE) |> ggplot(aes(sample = OVR65)) +
+p9 <- df.new |>
+  filter(CLIM == ">.5") |>
+  ggplot(aes(sample = OVR65)) +
   stat_qq() +
   stat_qq_line() +
   ggtitle("OVR65")
-p10 <- df.new |> filter(CLIM == TRUE) |> ggplot(aes(sample = PREC)) +
+p10 <- df.new |>
+  filter(CLIM == ">.5") |>
+  ggplot(aes(sample = PREC)) +
   stat_qq() +
   stat_qq_line() +
   ggtitle("PREC")
@@ -252,48 +293,103 @@ ggarrange(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, ncol = 5, nrow = 2)
 
 ### Тест Шапиро-Уилка на нормальность признаков сгруппированной выборки
 ```{r}
-shap.p.df <- df.new |> group_by(CLIM) |> select(NOX, POPN, NONW, MORT, CLIM) |>
-        summarize(NOX = shapiro.test(NOX)$p.value,
-                  POPN = shapiro.test(POPN)$p.value,
-                  NONW = shapiro.test(NONW)$p.value,
-                  MORT = shapiro.test(MORT)$p.value)
-shap.p.df
+df.new |>
+  group_by(CLIM) |>
+  summarize(NOX = shapiro.test(NOX)$p.value,
+            POPN = shapiro.test(POPN)$p.value,
+            NONW = shapiro.test(NONW)$p.value,
+            POOR = shapiro.test(POOR)$p.value,
+            DENS = shapiro.test(DENS)$p.value,
+            OVR65 = shapiro.test(OVR65)$p.value,
+            HOUS = shapiro.test(HOUS)$p.value,
+            EDUC = shapiro.test(EDUC)$p.value,
+            MORT = shapiro.test(MORT)$p.value)
 ```
 ### Тест Лиллиефорса на нормальность признаков сгруппированной выборки
 ```{r}
-lil.p.df <- df.new |> group_by(CLIM) |> select(NOX, POPN, NONW, MORT, CLIM) |>
-        summarize(NOX = lillie.test(NOX)$p.value,
-                  POPN = lillie.test(POPN)$p.value,
-                  NONW = lillie.test(NONW)$p.value,
-                  MORT = lillie.test(MORT)$p.value)
-lil.p.df
+df.new |>
+  group_by(CLIM) |>
+  summarize(NOX = lillie.test(NOX)$p.value,
+            POPN = lillie.test(POPN)$p.value,
+            NONW = lillie.test(NONW)$p.value,
+            POOR = lillie.test(POOR)$p.value,
+            DENS = lillie.test(DENS)$p.value,
+            OVR65 = lillie.test(OVR65)$p.value,
+            HOUS = lillie.test(HOUS)$p.value,
+            EDUC = lillie.test(EDUC)$p.value,
+            MORT = lillie.test(MORT)$p.value)
 ```
 ### Тест Андерсона-Дарлинга на нормальность признаков сгруппированной выборки
 ```{r}
-ad.p.df <- df.new |> group_by(CLIM) |> select(NOX, POPN, NONW, MORT, CLIM) |>
-        summarize(NOX = ad.test(NOX)$p.value,
-                  POPN = ad.test(POPN)$p.value,
-                  NONW = ad.test(NONW)$p.value,
-                  MORT = ad.test(MORT)$p.value)
-ad.p.df
+df.new |>
+  group_by(CLIM) |>
+  summarize(NOX = ad.test(NOX)$p.value,
+            POPN = ad.test(POPN)$p.value,
+            NONW = ad.test(NONW)$p.value,
+            POOR = ad.test(POOR)$p.value,
+            DENS = ad.test(DENS)$p.value,
+            OVR65 = ad.test(OVR65)$p.value,
+            HOUS = ad.test(HOUS)$p.value,
+            EDUC = ad.test(EDUC)$p.value,
+            MORT = ad.test(MORT)$p.value)
 ```
 
-## Тесты на совпадение распределений в группах
+Признаки близкие по распределению к нормальному в обеих группах
+(нет оснований полагать, что они не нормальны):
+
+1. ***NOX***
+2. ***POPN***
+3. ***POOR***
+4. ***OVR65***
+5. ***HOUS***
+6. ***EDUC***
+7. ***MORT***
+
+## Тесты на совпадение распределений в группах по осадкам для выбранных признаков
+Сбалансированный дизайн:
+```{r}
+df.new |> group_by(CLIM) |> summarize(n = n())
+```
+
 ### t-test
+p-value для проверки гипотезы о равенстве математических ожиданий признаков
+в зависимости от групп по осадкам
 ```{r}
-t.p.df <- df.new |> select(NOX, POPN, NONW, MORT, CLIM) |>
-        summarize(NOX = t.test(NOX[CLIM == FALSE], NOX[CLIM == TRUE])$p.value,
-                  POPN = t.test(POPN[CLIM == FALSE], POPN[CLIM == TRUE])$p.value,
-                  NONW = t.test(NONW[CLIM == FALSE], NONW[CLIM == TRUE])$p.value,
-                  MORT = t.test(MORT[CLIM == FALSE], MORT[CLIM == TRUE])$p.value)
-t.p.df
+df.new |>
+  summarize(NOX = t.test(NOX[CLIM == "<.5"], NOX[CLIM == ">.5"], var.equal = TRUE)$p.value,
+            POPN = t.test(POPN[CLIM == "<.5"], POPN[CLIM == ">.5"], var.equal = TRUE)$p.value,
+            POOR = t.test(POOR[CLIM == "<.5"], POOR[CLIM == ">.5"], var.equal = TRUE)$p.value,
+            OVR65 = t.test(OVR65[CLIM == "<.5"], OVR65[CLIM == ">.5"], var.equal = TRUE)$p.value,
+            HOUS = t.test(HOUS[CLIM == "<.5"], HOUS[CLIM == ">.5"], var.equal = TRUE)$p.value,
+            EDUC = t.test(EDUC[CLIM == "<.5"], EDUC[CLIM == ">.5"], var.equal = TRUE)$p.value,
+            MORT = t.test(MORT[CLIM == "<.5"], MORT[CLIM == ">.5"], var.equal = TRUE)$p.value)
 ```
-### Wilcox
+t-test применим для выборок малой длины, так как выбранные признаки имеют распределения близкие к
+нормальному.
+Гипотеза о равенстве математических ожиданий отвергается (при уровне значимости 0.05)
+только для признаков ***POOR*** и ***EDUC***.
+Таким образом, можно сказать, что бедность и степень образованности населения связаны с географическим
+положением региона.
+Про остальные признаки такого сказать нельзя.
+
+### Проверка симметричности ненормальных признаков
 ```{r}
-wc.p.df <- df.new |> select(NOX, POPN, NONW, MORT, CLIM) |>
-        summarize(NOX = wilcox.test(NOX[CLIM == FALSE], NOX[CLIM == TRUE])$p.value,
-                  POPN = wilcox.test(POPN[CLIM == FALSE], POPN[CLIM == TRUE])$p.value,
-                  NONW = wilcox.test(NONW[CLIM == FALSE], NONW[CLIM == TRUE])$p.value,
-                  MORT = wilcox.test(MORT[CLIM == FALSE], MORT[CLIM == TRUE])$p.value)
-wc.p.df
+tmp.nonw.l <- ci_skewness(df.new$NONW[df.new$CLIM == "<.5"], seed = 5)$interval
+tmp.nonw.m <- ci_skewness(df.new$NONW[df.new$CLIM == ">.5"], seed = 5)$interval
+tmp.dens.l <- ci_skewness(df.new$DENS[df.new$CLIM == "<.5"], seed = 5)$interval
+tmp.dens.m <- ci_skewness(df.new$DENS[df.new$CLIM == ">.5"], seed = 5)$interval
+
+data.frame(NONW_skew =
+             c(paste0("(", tmp.nonw.l[1], ", ", tmp.nonw.l[2], ")"),
+               paste0("(", tmp.nonw.m[1], ", ", tmp.nonw.m[2], ")")),
+           DENS_skew =
+             c(paste0("(", tmp.dens.l[1], ", ", tmp.dens.l[2], ")"),
+               paste0("(", tmp.dens.m[1], ", ", tmp.dens.m[2], ")")),
+           row.names = c("<.5", ">.5"))
 ```
+В таблице представлены 95%-доверительные интервалы для коэффициента асимметрии признаков в
+зависимости от количества осадков.
+О симметричности можно говорить только для признака ***DENS*** в группе с большим количеством осадков.
+
+Таким образом в отсутствие нормальности и симметричности нельзя проверить равенство математических
+ожиданий (критерий Виллкокса) или дисперсий (критерий Левена) по группам для признаков ***NONW*** и ***DENS***.
