@@ -8,11 +8,14 @@ knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 library(ggplot2)
 library(ggpubr)
 library(dplyr)
+library(GGally)
 library(scatterPlotMatrix)
 library(corrplot)
 library(psych)
 library(nortest)
 library(confintr)
+library(rstatix)
+library(corrplot)
 
 getmode <- function(v) {
   uniqv <- unique(v)
@@ -372,7 +375,7 @@ t-test применим для выборок малой длины, так ка
 положением региона.
 Про остальные признаки такого сказать нельзя.
 
-### Проверка симметричности ненормальных признаков
+### Проверка симметричности не нормальных признаков
 ```{r}
 tmp.nonw.l <- ci_skewness(df.new$NONW[df.new$CLIM == "<.5"], seed = 5)$interval
 tmp.nonw.m <- ci_skewness(df.new$NONW[df.new$CLIM == ">.5"], seed = 5)$interval
@@ -393,3 +396,79 @@ data.frame(NONW_skew =
 
 Таким образом в отсутствие нормальности и симметричности нельзя проверить равенство математических
 ожиданий (критерий Виллкокса) или дисперсий (критерий Левена) по группам для признаков ***NONW*** и ***DENS***.
+
+# Зависимости признаков
+Ещё раз смотрим на матрицу скаттерплотов:
+```{r}
+# df.new |> dplyr::select(-CLIM) |> ggpairs(diag = list(continuous = "barDiag"))
+df.new |> scatterPlotMatrix(corrPlotType = "Text",
+                            plotProperties = list(noCatColor = "Indigo"),
+                            slidersPosition = list(dimCount = 10, xStartingDimIndex = 1, yStartingDimIndex = 1),
+                            zAxisDim = "CLIM",
+                            categoricalCS = "Set1",
+                            controlWidgets = TRUE, height = 1050, width = 1000)
+```
+
+## Значимость коэффициентов корреляции Пирсона
+p-value для проверок гипотез о равенстве коэффициентов корреляции нулю:
+```{r}
+df.new |>
+  select(-CLIM) |>
+  rstatix::cor_pmat(method = "pearson")
+```
+
+Для уровня значимости $\alpha=0.5$ значимы корреляции между признаками (в каждом пункте уже прокомментированные связи пропускаются):
+
+* Все коэффициенты корреляции для признака ***MORT*** значимы.
+* ***NOX*** --- ***NONW*** (географические и исторические причины), ***DENS*** (урбанизация)
+* ***POOR*** --- ***PREC*** (география), ***OVR65***, ***EDUC***, ***HOUS***, ***NONW*** (исторические причины)
+* ***NONW*** --- ***OVR65***, ***POPN*** (связь через бедность?)
+* ***DENS*** больше ни с чем не коррелирует значимо.
+* ***HOUS*** --- ***POPN***, ***EDUC*** (свзязь через бедность?)
+* ***EDUC*** больше ни с чем не коррелирует значимо
+* ***POPN*** --- ***OVR65***
+* ***OVR65*** больше ни с чем не коррелирует значимо
+
+## Коэффициенты корреляции Спирмена
+```{r}
+df.new |>
+  select(-CLIM) |>
+  cor(method = "spearman") |>
+  corrplot(method = "number", tl.col = "black", tl.srt = 60)
+df.new |>
+  select(-CLIM) |>
+  rstatix::cor_pmat(method = "spearman")
+```
+
+По сравнению с коэффициентами Пирсона пропала значимость корреляции между признаками:
+
+* ***MORT*** --- ***PREC***, ***HOUS***, ***DENS***
+* ***POOR*** --- ***OVR65***
+
+По сравнению с коэффициентами Пирсона появилась значимость корреляции между признаками:
+
+* ***NOX*** --- ***EDUC***
+
+## Частные корреляции бедности, безопасности жилья и смертности
+Частные коэффициенты корреляции:
+```{r}
+df.new |>
+  group_by(CLIM) |>
+  mutate(MORT.m = MORT - mean(MORT), POOR.m = POOR - mean(POOR), HOUS.m = HOUS - mean(HOUS)) |>
+  group_by(.drop = TRUE) |>
+  select(HOUS.m, POOR.m, MORT.m) |>
+  cor(method = "pearson")
+```
+
+Значимости:
+```{r}
+df.new |>
+  group_by(CLIM) |>
+  mutate(MORT.m = MORT - mean(MORT), POOR.m = POOR - mean(POOR), HOUS.m = HOUS - mean(HOUS)) |>
+  group_by(.drop = TRUE) |>
+  select(HOUS.m, POOR.m, MORT.m) |>
+  rstatix::cor_pmat(method = "pearson")
+```
+
+Частные коэффициенты корреляции не претерпели сильных изменений по сравнению с коэффициентами корреляции Пирсона.
+Т.о. географическое положение не является скрытым фактором для этих признаков.
