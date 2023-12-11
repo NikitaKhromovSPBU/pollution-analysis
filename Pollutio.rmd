@@ -1,10 +1,13 @@
 ---
 title: "Анализ данных pollutio"
-output: html_notebook
+output:
+  html_notebook:
+    code_folding: hide
 ---
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 
+library(ppcor)
 library(ggplot2)
 library(ggpubr)
 library(dplyr)
@@ -16,6 +19,8 @@ library(nortest)
 library(confintr)
 library(rstatix)
 library(corrplot)
+
+select <- dplyr::select
 
 getmode <- function(v) {
   uniqv <- unique(v)
@@ -449,26 +454,18 @@ df.new |>
 
 * ***NOX*** --- ***EDUC***
 
-## Частные корреляции бедности, безопасности жилья и смертности
-Частные коэффициенты корреляции:
+## Частные корреляции смертности с бедностью и образованностью населения за вычетом влияния географического положения (осадков)
+Так как t-test показал зависимость параметров бедности и образованности от географического положения,
+то имеет смысл проверить, сохранятся ли корреляции этих признаков со смертностью, если вычесть влияние осадков.
+
+Частный коэффициент корреляции между ***MORT*** и ***POOR***:
 ```{r}
-df.new |>
-  group_by(CLIM) |>
-  mutate(MORT.m = MORT - mean(MORT), POOR.m = POOR - mean(POOR), HOUS.m = HOUS - mean(HOUS)) |>
-  group_by(.drop = TRUE) |>
-  select(HOUS.m, POOR.m, MORT.m) |>
-  cor(method = "pearson")
+pcor.test(df.new$MORT, df.new$POOR, df.new$PREC)[1:2]
 ```
 
-Значимости:
+Частный коэффициент корреляции между ***MORT*** и ***EDUC***:
 ```{r}
-df.new |>
-  group_by(CLIM) |>
-  mutate(MORT.m = MORT - mean(MORT), POOR.m = POOR - mean(POOR), HOUS.m = HOUS - mean(HOUS)) |>
-  group_by(.drop = TRUE) |>
-  select(HOUS.m, POOR.m, MORT.m) |>
-  rstatix::cor_pmat(method = "pearson")
+pcor.test(df.new$MORT, df.new$EDUC, df.new$PREC)[1:2]
 ```
 
-Частные коэффициенты корреляции не претерпели сильных изменений по сравнению с коэффициентами корреляции Пирсона.
-Т.о. географическое положение не является скрытым фактором для этих признаков.
+Частные коэффициенты корреляции уменьшились по модулю по сравнению с коэффициентами корреляции Пирсона, но всё ещё остались значимыми.
