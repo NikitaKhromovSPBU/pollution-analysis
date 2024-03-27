@@ -1,8 +1,8 @@
 ---
 title: "Анализ данных pollutio"
 output:
-  html_notebook:
-    code_folding: hide
+html_notebook:
+code_folding: hide
 ---
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(warning = FALSE, message = FALSE)
@@ -19,6 +19,8 @@ library(nortest)
 library(confintr)
 library(rstatix)
 library(corrplot)
+library(lm.beta)
+library(ellipse)
 
 select <- dplyr::select
 
@@ -483,3 +485,70 @@ pcor.test(df.new$MORT, df.new$EDUC, df.new$PREC)[1:2]
 ```
 
 Частные коэффициенты корреляции уменьшились по модулю по сравнению с коэффициентами корреляции Пирсона, но всё ещё остались значимыми.
+
+# Регрессионный анализ
+```{r}
+df.new |> select(-CLIM) |> scatterPlotMatrix(corrPlotType = "Text",
+                            regressionType = 1,
+                            plotProperties = list(noCatColor = "Indigo"),
+                            slidersPosition = list(dimCount = 10, xStartingDimIndex = 1, yStartingDimIndex = 1),
+                            categoricalCS = "Set1",
+                            controlWidgets = TRUE, height = 1050, width = 1000)
+```
+### Зависимый признак: ***MORT***
+### Регрессоры: все остальные признаки
+```{r}
+linear.model <- lm(MORT ~ . - CLIM, data = df.new)
+summary(linear.model)
+```
+### Оценки стандартизованных признаков $\beta$
+```{r}
+linear.model.beta <- lm.beta(linear.model)
+summary(linear.model.beta)
+```
+
+### Избавление от сильно коррелирующих признаков
+***DENS*** (относительно) сильно коррелирует с ***NONW*** и слабо с ***MORT***
+***OVR65*** сильно коррелирует с ***NONW*** и слабо с ***MORT***
+```{r}
+linear.model <- lm(MORT ~ . - CLIM - DENS - OVR65, data = df.new)
+linear.model.beta <- lm.beta(linear.model)
+summary(linear.model.beta)
+```
+
+### Стандартная ошибка стандартизованных оценок
+```{r}
+df.scale <- df.new |>  select(-CLIM) |> scale() |> as.data.frame()
+linear.model.scale <- lm(MORT ~ . - DENS - OVR65 - 1, data = df.scale)
+linear.model.scale.beta <- lm.beta(linear.model.scale)
+summary(linear.model.beta)
+```
+
+### Корреляции стандартизованных оценок
+```{r}
+linear.model.scale.all <- lm(MORT ~ . - 1, data = df.scale)
+# resid <- linear.model$residuals
+# sigma2 <- sum(resid^2) / (nrow(df.new) - ncol(df.new))
+# cov.b <- df.new |> select(-MORT, -CLIM) |> cov() |> solve() * sigma2 / nrow(df.new)
+resid.scale <- linear.model.scale.all$residuals
+sigma2.scale <- sum(resid.scale^2) / (nrow(df.scale) - ncol(df.scale))
+cov.beta <- df.scale |> select(-MORT) |> cor() |> solve() * sigma2.scale / nrow(df.scale)
+# cov.b |> cov2cor() |> corrplot(method = "number", tl.col = "black", tl.srt = 60)
+cov.beta |> cov2cor() |> corrplot(method = "number", tl.col = "black", tl.srt = 60)
+```
+
+## Доверительные эллипсоиды
+```{r}
+plot(ellipse(cov.beta, centre = linear.model.scale.all$coefficients[c("NONW", "OVR65")], level=0.95, npoints = 100), type = "l")
+lines(c(0, 0.4), c(0, 0.4))
+```
+
+```{r}
+plot(ellipse(cov.beta, centre = linear.model.scale.all$coefficients[c("POOR", "HOUS")], level=0.95, npoints = 100), type = "l")
+lines(c(-0.3, 0.2), c(-0.3, 0.2))
+```
+
+```{r}
+plot(ellipse(cov.beta, centre = linear.model.scale.all$coefficients[c("POOR", "PREC")], level=0.95, npoints = 100), type = "l")
+lines(c(-0.2, 0.3), c(-0.2, 0.3))
+```
