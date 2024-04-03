@@ -21,6 +21,9 @@ library(rstatix)
 library(corrplot)
 library(lm.beta)
 library(ellipse)
+library(olsrr)
+library(car)
+library(MASS)
 
 select <- dplyr::select
 
@@ -80,17 +83,26 @@ describe(df, type = 1, check = FALSE, range = FALSE) |>
 5. ***NOX***
 6. ***SO2***
 
-Были выбраны именно эти признаки так как по виду их гистограмм можно сказать, что их распределения "скошены" вправо, и у
-них подозрительно большие коэффициенты асимметрии и эксцесса.
+[//]: # (Были выбраны именно эти признаки так как по виду их гистограмм можно сказать, что их распределения "скошены" вправо, и у)
 
-Например можно проверить на нормальность ***NONW***
-```{r}
-df |> ggplot(aes(sample = NONW)) +
-  stat_qq() +
-  stat_qq_line() +
-  ggtitle("Normal probability plot for NONW")
-shapiro.test(df$NONW)
-```
+[//]: # (них подозрительно большие коэффициенты асимметрии и эксцесса.)
+
+[//]: # ()
+[//]: # (Например можно проверить на нормальность ***NONW***)
+
+[//]: # (```{r, })
+
+[//]: # (df |> ggplot&#40;aes&#40;sample = NONW&#41;&#41; +)
+
+[//]: # (  stat_qq&#40;&#41; +)
+
+[//]: # (  stat_qq_line&#40;&#41; +)
+
+[//]: # (  ggtitle&#40;"Normal probability plot for NONW"&#41;)
+
+[//]: # (shapiro.test&#40;NONW&#41;)
+
+[//]: # (```)
 
 ```{r}
 df.log <- df |> mutate(DENS = log(DENS), NONW = log(NONW), POOR = log(POOR), HC = log(HC), NOX = log(NOX), SO2 = log(SO2))
@@ -172,177 +184,347 @@ df.new |> colnames() |> print()
 ```{r}
 df.new <- df.new |> mutate(CLIM = factor(ifelse(PREC > median(PREC), ">.5", "<.5"), levels = c("<.5", ">.5")))
 ```
-## NP-plots для малого количества осадков
-```{r}
-p1 <- df.new |>
-  filter(CLIM == "<.5") |>
-  ggplot(aes(sample = MORT)) +
-  stat_qq() +
-  stat_qq_line() +
-  ggtitle("MORT")
-p2 <- df.new |>
-  filter(CLIM == "<.5") |>
-  ggplot(aes(sample = NOX)) +
-  stat_qq() +
-  stat_qq_line() +
-  ggtitle("NOX")
-p3 <- df.new |>
-  filter(CLIM == "<.5") |>
-  ggplot(aes(sample = POOR)) +
-  stat_qq() +
-  stat_qq_line() +
-  ggtitle("POOR")
-p4 <- df.new |>
-  filter(CLIM == "<.5") |>
-  ggplot(aes(sample = NONW)) +
-  stat_qq() +
-  stat_qq_line() +
-  ggtitle("NONW")
-p5 <- df.new |>
-  filter(CLIM == "<.5") |>
-  ggplot(aes(sample = DENS)) +
-  stat_qq() +
-  stat_qq_line() +
-  ggtitle("DENS")
-p6 <- df.new |>
-  filter(CLIM == "<.5") |>
-  ggplot(aes(sample = HOUS)) +
-  stat_qq() +
-  stat_qq_line() +
-  ggtitle("HOUS")
-p7 <- df.new |>
-  filter(CLIM == "<.5") |>
-  ggplot(aes(sample = EDUC)) +
-  stat_qq() +
-  stat_qq_line() +
-  ggtitle("EDUC")
-p8 <- df.new |>
-  filter(CLIM == "<.5") |>
-  ggplot(aes(sample = POPN)) +
-  stat_qq() +
-  stat_qq_line() +
-  ggtitle("POPN")
-p9 <- df.new |>
-  filter(CLIM == "<.5") |>
-  ggplot(aes(sample = OVR65)) +
-  stat_qq() +
-  stat_qq_line() +
-  ggtitle("OVR65")
-p10 <- df.new |>
-  filter(CLIM == "<.5") |>
-  ggplot(aes(sample = PREC)) +
-  stat_qq() +
-  stat_qq_line() +
-  ggtitle("PREC")
-ggarrange(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, ncol = 5, nrow = 2)
-```
-## NP-plots для большого количества осадков
-```{r}
-p1 <- df.new |>
-  filter(CLIM == ">.5") |>
-  ggplot(aes(sample = MORT)) +
-  stat_qq() +
-  stat_qq_line() +
-  ggtitle("MORT")
-p2 <- df.new |>
-  filter(CLIM == ">.5") |>
-  ggplot(aes(sample = NOX)) +
-  stat_qq() +
-  stat_qq_line() +
-  ggtitle("NOX")
-p3 <- df.new |>
-  filter(CLIM == ">.5") |>
-  ggplot(aes(sample = POOR)) +
-  stat_qq() +
-  stat_qq_line() +
-  ggtitle("POOR")
-p4 <- df.new |>
-  filter(CLIM == ">.5") |>
-  ggplot(aes(sample = NONW)) +
-  stat_qq() +
-  stat_qq_line() +
-  ggtitle("NONW")
-p5 <- df.new |>
-  filter(CLIM == ">.5") |>
-  ggplot(aes(sample = DENS)) +
-  stat_qq() +
-  stat_qq_line() +
-  ggtitle("DENS")
-p6 <- df.new |>
-  filter(CLIM == ">.5") |>
-  ggplot(aes(sample = HOUS)) +
-  stat_qq() +
-  stat_qq_line() +
-  ggtitle("HOUS")
-p7 <- df.new |>
-  filter(CLIM == ">.5") |>
-  ggplot(aes(sample = EDUC)) +
-  stat_qq() +
-  stat_qq_line() +
-  ggtitle("EDUC")
-p8 <- df.new |>
-  filter(CLIM == ">.5") |>
-  ggplot(aes(sample = POPN)) +
-  stat_qq() +
-  stat_qq_line() +
-  ggtitle("POPN")
-p9 <- df.new |>
-  filter(CLIM == ">.5") |>
-  ggplot(aes(sample = OVR65)) +
-  stat_qq() +
-  stat_qq_line() +
-  ggtitle("OVR65")
-p10 <- df.new |>
-  filter(CLIM == ">.5") |>
-  ggplot(aes(sample = PREC)) +
-  stat_qq() +
-  stat_qq_line() +
-  ggtitle("PREC")
-ggarrange(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, ncol = 5, nrow = 2)
-```
 
-### Тест Шапиро-Уилка на нормальность признаков сгруппированной выборки
-```{r}
-df.new |>
-  group_by(CLIM) |>
-  summarize(NOX = shapiro.test(NOX)$p.value,
-            POPN = shapiro.test(POPN)$p.value,
-            NONW = shapiro.test(NONW)$p.value,
-            POOR = shapiro.test(POOR)$p.value,
-            DENS = shapiro.test(DENS)$p.value,
-            OVR65 = shapiro.test(OVR65)$p.value,
-            HOUS = shapiro.test(HOUS)$p.value,
-            EDUC = shapiro.test(EDUC)$p.value,
-            MORT = shapiro.test(MORT)$p.value)
-```
-### Тест Лиллиефорса на нормальность признаков сгруппированной выборки
-```{r}
-df.new |>
-  group_by(CLIM) |>
-  summarize(NOX = lillie.test(NOX)$p.value,
-            POPN = lillie.test(POPN)$p.value,
-            NONW = lillie.test(NONW)$p.value,
-            POOR = lillie.test(POOR)$p.value,
-            DENS = lillie.test(DENS)$p.value,
-            OVR65 = lillie.test(OVR65)$p.value,
-            HOUS = lillie.test(HOUS)$p.value,
-            EDUC = lillie.test(EDUC)$p.value,
-            MORT = lillie.test(MORT)$p.value)
-```
-### Тест Андерсона-Дарлинга на нормальность признаков сгруппированной выборки
-```{r}
-df.new |>
-  group_by(CLIM) |>
-  summarize(NOX = ad.test(NOX)$p.value,
-            POPN = ad.test(POPN)$p.value,
-            NONW = ad.test(NONW)$p.value,
-            POOR = ad.test(POOR)$p.value,
-            DENS = ad.test(DENS)$p.value,
-            OVR65 = ad.test(OVR65)$p.value,
-            HOUS = ad.test(HOUS)$p.value,
-            EDUC = ad.test(EDUC)$p.value,
-            MORT = ad.test(MORT)$p.value)
-```
+[//]: # (## NP-plots для малого количества осадков)
+
+[//]: # (```{r})
+
+[//]: # (p1 <- df.new |>)
+
+[//]: # (  filter&#40;CLIM == "<.5"&#41; |>)
+
+[//]: # (  ggplot&#40;aes&#40;sample = MORT&#41;&#41; +)
+
+[//]: # (  stat_qq&#40;&#41; +)
+
+[//]: # (  stat_qq_line&#40;&#41; +)
+
+[//]: # (  ggtitle&#40;"MORT"&#41;)
+
+[//]: # (p2 <- df.new |>)
+
+[//]: # (  filter&#40;CLIM == "<.5"&#41; |>)
+
+[//]: # (  ggplot&#40;aes&#40;sample = NOX&#41;&#41; +)
+
+[//]: # (  stat_qq&#40;&#41; +)
+
+[//]: # (  stat_qq_line&#40;&#41; +)
+
+[//]: # (  ggtitle&#40;"NOX"&#41;)
+
+[//]: # (p3 <- df.new |>)
+
+[//]: # (  filter&#40;CLIM == "<.5"&#41; |>)
+
+[//]: # (  ggplot&#40;aes&#40;sample = POOR&#41;&#41; +)
+
+[//]: # (  stat_qq&#40;&#41; +)
+
+[//]: # (  stat_qq_line&#40;&#41; +)
+
+[//]: # (  ggtitle&#40;"POOR"&#41;)
+
+[//]: # (p4 <- df.new |>)
+
+[//]: # (  filter&#40;CLIM == "<.5"&#41; |>)
+
+[//]: # (  ggplot&#40;aes&#40;sample = NONW&#41;&#41; +)
+
+[//]: # (  stat_qq&#40;&#41; +)
+
+[//]: # (  stat_qq_line&#40;&#41; +)
+
+[//]: # (  ggtitle&#40;"NONW"&#41;)
+
+[//]: # (p5 <- df.new |>)
+
+[//]: # (  filter&#40;CLIM == "<.5"&#41; |>)
+
+[//]: # (  ggplot&#40;aes&#40;sample = DENS&#41;&#41; +)
+
+[//]: # (  stat_qq&#40;&#41; +)
+
+[//]: # (  stat_qq_line&#40;&#41; +)
+
+[//]: # (  ggtitle&#40;"DENS"&#41;)
+
+[//]: # (p6 <- df.new |>)
+
+[//]: # (  filter&#40;CLIM == "<.5"&#41; |>)
+
+[//]: # (  ggplot&#40;aes&#40;sample = HOUS&#41;&#41; +)
+
+[//]: # (  stat_qq&#40;&#41; +)
+
+[//]: # (  stat_qq_line&#40;&#41; +)
+
+[//]: # (  ggtitle&#40;"HOUS"&#41;)
+
+[//]: # (p7 <- df.new |>)
+
+[//]: # (  filter&#40;CLIM == "<.5"&#41; |>)
+
+[//]: # (  ggplot&#40;aes&#40;sample = EDUC&#41;&#41; +)
+
+[//]: # (  stat_qq&#40;&#41; +)
+
+[//]: # (  stat_qq_line&#40;&#41; +)
+
+[//]: # (  ggtitle&#40;"EDUC"&#41;)
+
+[//]: # (p8 <- df.new |>)
+
+[//]: # (  filter&#40;CLIM == "<.5"&#41; |>)
+
+[//]: # (  ggplot&#40;aes&#40;sample = POPN&#41;&#41; +)
+
+[//]: # (  stat_qq&#40;&#41; +)
+
+[//]: # (  stat_qq_line&#40;&#41; +)
+
+[//]: # (  ggtitle&#40;"POPN"&#41;)
+
+[//]: # (p9 <- df.new |>)
+
+[//]: # (  filter&#40;CLIM == "<.5"&#41; |>)
+
+[//]: # (  ggplot&#40;aes&#40;sample = OVR65&#41;&#41; +)
+
+[//]: # (  stat_qq&#40;&#41; +)
+
+[//]: # (  stat_qq_line&#40;&#41; +)
+
+[//]: # (  ggtitle&#40;"OVR65"&#41;)
+
+[//]: # (p10 <- df.new |>)
+
+[//]: # (  filter&#40;CLIM == "<.5"&#41; |>)
+
+[//]: # (  ggplot&#40;aes&#40;sample = PREC&#41;&#41; +)
+
+[//]: # (  stat_qq&#40;&#41; +)
+
+[//]: # (  stat_qq_line&#40;&#41; +)
+
+[//]: # (  ggtitle&#40;"PREC"&#41;)
+
+[//]: # (ggarrange&#40;p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, ncol = 5, nrow = 2&#41;)
+
+[//]: # (```)
+
+[//]: # (## NP-plots для большого количества осадков)
+
+[//]: # (```{r})
+
+[//]: # (p1 <- df.new |>)
+
+[//]: # (  filter&#40;CLIM == ">.5"&#41; |>)
+
+[//]: # (  ggplot&#40;aes&#40;sample = MORT&#41;&#41; +)
+
+[//]: # (  stat_qq&#40;&#41; +)
+
+[//]: # (  stat_qq_line&#40;&#41; +)
+
+[//]: # (  ggtitle&#40;"MORT"&#41;)
+
+[//]: # (p2 <- df.new |>)
+
+[//]: # (  filter&#40;CLIM == ">.5"&#41; |>)
+
+[//]: # (  ggplot&#40;aes&#40;sample = NOX&#41;&#41; +)
+
+[//]: # (  stat_qq&#40;&#41; +)
+
+[//]: # (  stat_qq_line&#40;&#41; +)
+
+[//]: # (  ggtitle&#40;"NOX"&#41;)
+
+[//]: # (p3 <- df.new |>)
+
+[//]: # (  filter&#40;CLIM == ">.5"&#41; |>)
+
+[//]: # (  ggplot&#40;aes&#40;sample = POOR&#41;&#41; +)
+
+[//]: # (  stat_qq&#40;&#41; +)
+
+[//]: # (  stat_qq_line&#40;&#41; +)
+
+[//]: # (  ggtitle&#40;"POOR"&#41;)
+
+[//]: # (p4 <- df.new |>)
+
+[//]: # (  filter&#40;CLIM == ">.5"&#41; |>)
+
+[//]: # (  ggplot&#40;aes&#40;sample = NONW&#41;&#41; +)
+
+[//]: # (  stat_qq&#40;&#41; +)
+
+[//]: # (  stat_qq_line&#40;&#41; +)
+
+[//]: # (  ggtitle&#40;"NONW"&#41;)
+
+[//]: # (p5 <- df.new |>)
+
+[//]: # (  filter&#40;CLIM == ">.5"&#41; |>)
+
+[//]: # (  ggplot&#40;aes&#40;sample = DENS&#41;&#41; +)
+
+[//]: # (  stat_qq&#40;&#41; +)
+
+[//]: # (  stat_qq_line&#40;&#41; +)
+
+[//]: # (  ggtitle&#40;"DENS"&#41;)
+
+[//]: # (p6 <- df.new |>)
+
+[//]: # (  filter&#40;CLIM == ">.5"&#41; |>)
+
+[//]: # (  ggplot&#40;aes&#40;sample = HOUS&#41;&#41; +)
+
+[//]: # (  stat_qq&#40;&#41; +)
+
+[//]: # (  stat_qq_line&#40;&#41; +)
+
+[//]: # (  ggtitle&#40;"HOUS"&#41;)
+
+[//]: # (p7 <- df.new |>)
+
+[//]: # (  filter&#40;CLIM == ">.5"&#41; |>)
+
+[//]: # (  ggplot&#40;aes&#40;sample = EDUC&#41;&#41; +)
+
+[//]: # (  stat_qq&#40;&#41; +)
+
+[//]: # (  stat_qq_line&#40;&#41; +)
+
+[//]: # (  ggtitle&#40;"EDUC"&#41;)
+
+[//]: # (p8 <- df.new |>)
+
+[//]: # (  filter&#40;CLIM == ">.5"&#41; |>)
+
+[//]: # (  ggplot&#40;aes&#40;sample = POPN&#41;&#41; +)
+
+[//]: # (  stat_qq&#40;&#41; +)
+
+[//]: # (  stat_qq_line&#40;&#41; +)
+
+[//]: # (  ggtitle&#40;"POPN"&#41;)
+
+[//]: # (p9 <- df.new |>)
+
+[//]: # (  filter&#40;CLIM == ">.5"&#41; |>)
+
+[//]: # (  ggplot&#40;aes&#40;sample = OVR65&#41;&#41; +)
+
+[//]: # (  stat_qq&#40;&#41; +)
+
+[//]: # (  stat_qq_line&#40;&#41; +)
+
+[//]: # (  ggtitle&#40;"OVR65"&#41;)
+
+[//]: # (p10 <- df.new |>)
+
+[//]: # (  filter&#40;CLIM == ">.5"&#41; |>)
+
+[//]: # (  ggplot&#40;aes&#40;sample = PREC&#41;&#41; +)
+
+[//]: # (  stat_qq&#40;&#41; +)
+
+[//]: # (  stat_qq_line&#40;&#41; +)
+
+[//]: # (  ggtitle&#40;"PREC"&#41;)
+
+[//]: # (ggarrange&#40;p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, ncol = 5, nrow = 2&#41;)
+
+[//]: # (```)
+
+[//]: # ()
+[//]: # (### Тест Шапиро-Уилка на нормальность признаков сгруппированной выборки)
+
+[//]: # (```{r})
+
+[//]: # (df.new |>)
+
+[//]: # (  group_by&#40;CLIM&#41; |>)
+
+[//]: # (  summarize&#40;NOX = shapiro.test&#40;NOX&#41;$p.value,)
+
+[//]: # (            POPN = shapiro.test&#40;POPN&#41;$p.value,)
+
+[//]: # (            NONW = shapiro.test&#40;NONW&#41;$p.value,)
+
+[//]: # (            POOR = shapiro.test&#40;POOR&#41;$p.value,)
+
+[//]: # (            DENS = shapiro.test&#40;DENS&#41;$p.value,)
+
+[//]: # (            OVR65 = shapiro.test&#40;OVR65&#41;$p.value,)
+
+[//]: # (            HOUS = shapiro.test&#40;HOUS&#41;$p.value,)
+
+[//]: # (            EDUC = shapiro.test&#40;EDUC&#41;$p.value,)
+
+[//]: # (            MORT = shapiro.test&#40;MORT&#41;$p.value&#41;)
+
+[//]: # (```)
+
+[//]: # (### Тест Лиллиефорса на нормальность признаков сгруппированной выборки)
+
+[//]: # (```{r})
+
+[//]: # (df.new |>)
+
+[//]: # (  group_by&#40;CLIM&#41; |>)
+
+[//]: # (  summarize&#40;NOX = lillie.test&#40;NOX&#41;$p.value,)
+
+[//]: # (            POPN = lillie.test&#40;POPN&#41;$p.value,)
+
+[//]: # (            NONW = lillie.test&#40;NONW&#41;$p.value,)
+
+[//]: # (            POOR = lillie.test&#40;POOR&#41;$p.value,)
+
+[//]: # (            DENS = lillie.test&#40;DENS&#41;$p.value,)
+
+[//]: # (            OVR65 = lillie.test&#40;OVR65&#41;$p.value,)
+
+[//]: # (            HOUS = lillie.test&#40;HOUS&#41;$p.value,)
+
+[//]: # (            EDUC = lillie.test&#40;EDUC&#41;$p.value,)
+
+[//]: # (            MORT = lillie.test&#40;MORT&#41;$p.value&#41;)
+
+[//]: # (```)
+
+[//]: # (### Тест Андерсона-Дарлинга на нормальность признаков сгруппированной выборки)
+
+[//]: # (```{r})
+
+[//]: # (df.new |>)
+
+[//]: # (  group_by&#40;CLIM&#41; |>)
+
+[//]: # (  summarize&#40;NOX = ad.test&#40;NOX&#41;$p.value,)
+
+[//]: # (            POPN = ad.test&#40;POPN&#41;$p.value,)
+
+[//]: # (            NONW = ad.test&#40;NONW&#41;$p.value,)
+
+[//]: # (            POOR = ad.test&#40;POOR&#41;$p.value,)
+
+[//]: # (            DENS = ad.test&#40;DENS&#41;$p.value,)
+
+[//]: # (            OVR65 = ad.test&#40;OVR65&#41;$p.value,)
+
+[//]: # (            HOUS = ad.test&#40;HOUS&#41;$p.value,)
+
+[//]: # (            EDUC = ad.test&#40;EDUC&#41;$p.value,)
+
+[//]: # (            MORT = ad.test&#40;MORT&#41;$p.value&#41;)
+
+[//]: # (```)
 
 Признаки близкие по распределению к нормальному в обеих группах
 (нет оснований полагать, что они не нормальны):
@@ -355,150 +537,261 @@ df.new |>
 6. ***EDUC***
 7. ***MORT***
 
-## Тесты на совпадение распределений в группах по осадкам для выбранных признаков
-Сбалансированный дизайн:
-```{r}
-df.new |> group_by(CLIM) |> summarize(n = n())
-```
+[//]: # (## Тесты на совпадение распределений в группах по осадкам для выбранных признаков)
 
-### t-test
-p-value для проверки гипотезы о равенстве математических ожиданий признаков
-в зависимости от групп по осадкам
-```{r}
-df.new |>
-  summarize(NOX = t.test(NOX[CLIM == "<.5"], NOX[CLIM == ">.5"], var.equal = TRUE)$p.value,
-            POPN = t.test(POPN[CLIM == "<.5"], POPN[CLIM == ">.5"], var.equal = TRUE)$p.value,
-            POOR = t.test(POOR[CLIM == "<.5"], POOR[CLIM == ">.5"], var.equal = TRUE)$p.value,
-            OVR65 = t.test(OVR65[CLIM == "<.5"], OVR65[CLIM == ">.5"], var.equal = TRUE)$p.value,
-            HOUS = t.test(HOUS[CLIM == "<.5"], HOUS[CLIM == ">.5"], var.equal = TRUE)$p.value,
-            EDUC = t.test(EDUC[CLIM == "<.5"], EDUC[CLIM == ">.5"], var.equal = TRUE)$p.value,
-            MORT = t.test(MORT[CLIM == "<.5"], MORT[CLIM == ">.5"], var.equal = TRUE)$p.value)
-```
-t-test применим для выборок малой длины, так как выбранные признаки имеют распределения близкие к
-нормальному.
-Гипотеза о равенстве математических ожиданий отвергается (при уровне значимости 0.05)
-только для признаков ***POOR*** и ***EDUC***.
-Таким образом, можно сказать, что бедность и степень образованности населения связаны с географическим
-положением региона.
-Про остальные признаки такого сказать нельзя.
+[//]: # (Сбалансированный дизайн:)
 
-### Проверка симметричности не нормальных признаков
-```{r}
-tmp.nonw.l <- ci_skewness(df.new$NONW[df.new$CLIM == "<.5"], seed = 5)$interval
-tmp.nonw.m <- ci_skewness(df.new$NONW[df.new$CLIM == ">.5"], seed = 5)$interval
-tmp.dens.l <- ci_skewness(df.new$DENS[df.new$CLIM == "<.5"], seed = 5)$interval
-tmp.dens.m <- ci_skewness(df.new$DENS[df.new$CLIM == ">.5"], seed = 5)$interval
+[//]: # (```{r})
 
-data.frame(NONW_skew =
-             c(paste0("(", tmp.nonw.l[1], ", ", tmp.nonw.l[2], ")"),
-               paste0("(", tmp.nonw.m[1], ", ", tmp.nonw.m[2], ")")),
-           DENS_skew =
-             c(paste0("(", tmp.dens.l[1], ", ", tmp.dens.l[2], ")"),
-               paste0("(", tmp.dens.m[1], ", ", tmp.dens.m[2], ")")),
-           row.names = c("<.5", ">.5"))
-```
-В таблице представлены 95%-доверительные интервалы для коэффициента асимметрии признаков в
-зависимости от количества осадков.
-О симметричности можно говорить только для признака ***DENS*** в группе с большим количеством осадков.
+[//]: # (df.new |> group_by&#40;CLIM&#41; |> summarize&#40;n = n&#40;&#41;&#41;)
 
-Таким образом в отсутствие нормальности и симметричности нельзя проверить равенство математических
-ожиданий (критерий Виллкокса) или дисперсий (критерий Левена) по группам для признаков ***NONW*** и ***DENS***.
+[//]: # (```)
 
-# Зависимости признаков
-Ещё раз смотрим на матрицу скаттерплотов:
-```{r}
-# df.new |> dplyr::select(-CLIM) |> ggpairs(diag = list(continuous = "barDiag"))
-df.new <- df.new[, -32]
-df.new |> scatterPlotMatrix(corrPlotType = "Text",
-                            plotProperties = list(noCatColor = "Indigo"),
-                            slidersPosition = list(dimCount = 10, xStartingDimIndex = 1, yStartingDimIndex = 1),
-                            zAxisDim = "CLIM",
-                            categoricalCS = "Set1",
-                            controlWidgets = TRUE, height = 1050, width = 1000)
-```
+[//]: # (### t-test)
 
-## Значимость коэффициентов корреляции Пирсона
-p-value для проверок гипотез о равенстве коэффициентов корреляции нулю:
-```{r}
-df.new |>
-  select(-CLIM) |>
-  rstatix::cor_pmat(method = "pearson")
-```
+[//]: # (p-value для проверки гипотезы о равенстве математических ожиданий признаков)
 
-Для уровня значимости $\alpha=0.05$ значимы корреляции между признаками (в каждом пункте уже прокомментированные связи пропускаются):
+[//]: # (в зависимости от групп по осадкам)
 
-* Все коэффициенты корреляции для признака ***MORT*** значимы.
-* ***NOX*** --- ***NONW*** (скрытый фактор: географические и исторические причины), ***DENS*** (скрытый фактор: урбанизация)
-* ***POOR*** --- ***PREC*** (скрытый фактор: география), для признаков ***OVR65***, ***EDUC***, ***HOUS*** бедность - причина,
-***NONW*** (скрытый фактор: исторические причины)
-* ***NONW*** --- ***OVR65***, ***POPN*** (скрытый фактор: бедность?)
-* ***DENS*** больше ни с чем не коррелирует значимо.
-* ***HOUS*** --- ***POPN***, ***EDUC*** (скрытый фактор: бедность)
-* ***EDUC*** больше ни с чем не коррелирует значимо
-* ***POPN*** --- ***OVR65*** (скрытый фактор: плотность)
-* ***OVR65*** больше ни с чем не коррелирует значимо
+[//]: # (```{r})
 
-Многие корреляции хоть и значимы, остаются довольно малыми.
-Из сильных корреляций можно выделить корреляцию между стареющим и небелым населением, процентом безопасных домов и бедностью,
-а также степенью загрязнения и смертностью.
+[//]: # (df.new |>)
 
-В отсутствие выбросов, для признаков, близких к нормальным ожидается, что коэффициенты корреляции не изменятся сильно.
+[//]: # (  summarize&#40;NOX = t.test&#40;NOX[CLIM == "<.5"], NOX[CLIM == ">.5"], var.equal = TRUE&#41;$p.value,)
 
-Между признаками ***NONW*** и ***POOR*** видна слабая монотонная нелинейность, которая может увеличить коэффициент Спирмена
-относительно Пирсона, однако распределение ***POOR*** имеет выраженный "хвост", из-за чего может увеличится коэффициент
-Пирсона относительно Спирмена. Поэтому в этом случае нельзя сказать об их связи однозначно.
+[//]: # (            POPN = t.test&#40;POPN[CLIM == "<.5"], POPN[CLIM == ">.5"], var.equal = TRUE&#41;$p.value,)
 
-## Коэффициенты корреляции Спирмена
-```{r}
-df.new |>
-  select(-CLIM) |>
-  cor(method = "spearman") |>
-  corrplot(method = "number", tl.col = "black", tl.srt = 60)
-df.new |>
-  select(-CLIM) |>
-  rstatix::cor_pmat(method = "spearman")
-```
+[//]: # (            POOR = t.test&#40;POOR[CLIM == "<.5"], POOR[CLIM == ">.5"], var.equal = TRUE&#41;$p.value,)
 
-По сравнению с коэффициентами Пирсона пропала значимость корреляции между признаками:
+[//]: # (            OVR65 = t.test&#40;OVR65[CLIM == "<.5"], OVR65[CLIM == ">.5"], var.equal = TRUE&#41;$p.value,)
 
-* ***MORT*** --- ***PREC***, ***HOUS***, ***DENS***
-* ***POOR*** --- ***OVR65***
+[//]: # (            HOUS = t.test&#40;HOUS[CLIM == "<.5"], HOUS[CLIM == ">.5"], var.equal = TRUE&#41;$p.value,)
 
-Вероятнее всего это объясняется меньшей мощностью критерия, применяющего для построения статистики коэффициент Спирмена.
+[//]: # (            EDUC = t.test&#40;EDUC[CLIM == "<.5"], EDUC[CLIM == ">.5"], var.equal = TRUE&#41;$p.value,)
 
-По сравнению с коэффициентами Пирсона появилась значимость корреляции между признаками:
+[//]: # (            MORT = t.test&#40;MORT[CLIM == "<.5"], MORT[CLIM == ">.5"], var.equal = TRUE&#41;$p.value&#41;)
 
-* ***NOX*** --- ***EDUC***
+[//]: # (```)
 
-## Частные корреляции смертности с бедностью и образованностью населения за вычетом влияния географического положения (осадков)
-Так как t-test показал зависимость параметров бедности и образованности от географического положения,
-то имеет смысл проверить, сохранятся ли корреляции этих признаков со смертностью, если вычесть влияние осадков.
+[//]: # (t-test применим для выборок малой длины, так как выбранные признаки имеют распределения близкие к)
 
-Частный коэффициент корреляции между ***MORT*** и ***POOR***:
-```{r}
-pcor.test(df.new$MORT, df.new$POOR, df.new$PREC)[1:2]
-```
+[//]: # (нормальному.)
 
-Частный коэффициент корреляции между ***MORT*** и ***EDUC***:
-```{r}
-pcor.test(df.new$MORT, df.new$EDUC, df.new$PREC)[1:2]
-```
+[//]: # (Гипотеза о равенстве математических ожиданий отвергается &#40;при уровне значимости 0.05&#41;)
 
-Частные коэффициенты корреляции уменьшились по модулю по сравнению с коэффициентами корреляции Пирсона, но всё ещё остались значимыми.
+[//]: # (только для признаков ***POOR*** и ***EDUC***.)
+
+[//]: # (Таким образом, можно сказать, что бедность и степень образованности населения связаны с географическим)
+
+[//]: # (положением региона.)
+
+[//]: # (Про остальные признаки такого сказать нельзя.)
+
+[//]: # ()
+[//]: # (### Проверка симметричности не нормальных признаков)
+
+[//]: # (```{r})
+
+[//]: # (tmp.nonw.l <- ci_skewness&#40;df.new$NONW[df.new$CLIM == "<.5"], seed = 5&#41;$interval)
+
+[//]: # (tmp.nonw.m <- ci_skewness&#40;df.new$NONW[df.new$CLIM == ">.5"], seed = 5&#41;$interval)
+
+[//]: # (tmp.dens.l <- ci_skewness&#40;df.new$DENS[df.new$CLIM == "<.5"], seed = 5&#41;$interval)
+
+[//]: # (tmp.dens.m <- ci_skewness&#40;df.new$DENS[df.new$CLIM == ">.5"], seed = 5&#41;$interval)
+
+[//]: # ()
+[//]: # (data.frame&#40;NONW_skew =)
+
+[//]: # (             c&#40;paste0&#40;"&#40;", tmp.nonw.l[1], ", ", tmp.nonw.l[2], "&#41;"&#41;,)
+
+[//]: # (               paste0&#40;"&#40;", tmp.nonw.m[1], ", ", tmp.nonw.m[2], "&#41;"&#41;&#41;,)
+
+[//]: # (           DENS_skew =)
+
+[//]: # (             c&#40;paste0&#40;"&#40;", tmp.dens.l[1], ", ", tmp.dens.l[2], "&#41;"&#41;,)
+
+[//]: # (               paste0&#40;"&#40;", tmp.dens.m[1], ", ", tmp.dens.m[2], "&#41;"&#41;&#41;,)
+
+[//]: # (           row.names = c&#40;"<.5", ">.5"&#41;&#41;)
+
+[//]: # (```)
+
+[//]: # (В таблице представлены 95%-доверительные интервалы для коэффициента асимметрии признаков в)
+
+[//]: # (зависимости от количества осадков.)
+
+[//]: # (О симметричности можно говорить только для признака ***DENS*** в группе с большим количеством осадков.)
+
+[//]: # ()
+[//]: # (Таким образом в отсутствие нормальности и симметричности нельзя проверить равенство математических)
+
+[//]: # (ожиданий &#40;критерий Виллкокса&#41; или дисперсий &#40;критерий Левена&#41; по группам для признаков ***NONW*** и ***DENS***.)
+
+[//]: # ()
+[//]: # (# Зависимости признаков)
+
+[//]: # (Ещё раз смотрим на матрицу скаттерплотов:)
+
+[//]: # (```{r})
+
+[//]: # (# df.new |> dplyr::select&#40;-CLIM&#41; |> ggpairs&#40;diag = list&#40;continuous = "barDiag"&#41;&#41;)
+
+[//]: # (df.new <- df.new[, -32])
+
+[//]: # (df.new |> scatterPlotMatrix&#40;corrPlotType = "Text",)
+
+[//]: # (                            plotProperties = list&#40;noCatColor = "Indigo"&#41;,)
+
+[//]: # (                            slidersPosition = list&#40;dimCount = 10, xStartingDimIndex = 1, yStartingDimIndex = 1&#41;,)
+
+[//]: # (                            zAxisDim = "CLIM",)
+
+[//]: # (                            categoricalCS = "Set1",)
+
+[//]: # (                            controlWidgets = TRUE, height = 1050, width = 1000&#41;)
+
+[//]: # (```)
+
+[//]: # ()
+[//]: # (## Значимость коэффициентов корреляции Пирсона)
+
+[//]: # (p-value для проверок гипотез о равенстве коэффициентов корреляции нулю:)
+
+[//]: # (```{r})
+
+[//]: # (df.new |>)
+
+[//]: # (  select&#40;-CLIM&#41; |>)
+
+[//]: # (  rstatix::cor_pmat&#40;method = "pearson"&#41;)
+
+[//]: # (```)
+
+[//]: # ()
+[//]: # (Для уровня значимости $\alpha=0.05$ значимы корреляции между признаками &#40;в каждом пункте уже прокомментированные связи пропускаются&#41;:)
+
+[//]: # ()
+[//]: # (* Все коэффициенты корреляции для признака ***MORT*** значимы.)
+
+[//]: # (* ***NOX*** --- ***NONW*** &#40;скрытый фактор: географические и исторические причины&#41;, ***DENS*** &#40;скрытый фактор: урбанизация&#41;)
+
+[//]: # (* ***POOR*** --- ***PREC*** &#40;скрытый фактор: география&#41;, для признаков ***OVR65***, ***EDUC***, ***HOUS*** бедность - причина,)
+
+[//]: # (***NONW*** &#40;скрытый фактор: исторические причины&#41;)
+
+[//]: # (* ***NONW*** --- ***OVR65***, ***POPN*** &#40;скрытый фактор: бедность?&#41;)
+
+[//]: # (* ***DENS*** больше ни с чем не коррелирует значимо.)
+
+[//]: # (* ***HOUS*** --- ***POPN***, ***EDUC*** &#40;скрытый фактор: бедность&#41;)
+
+[//]: # (* ***EDUC*** больше ни с чем не коррелирует значимо)
+
+[//]: # (* ***POPN*** --- ***OVR65*** &#40;скрытый фактор: плотность&#41;)
+
+[//]: # (* ***OVR65*** больше ни с чем не коррелирует значимо)
+
+[//]: # ()
+[//]: # (Многие корреляции хоть и значимы, остаются довольно малыми.)
+
+[//]: # (Из сильных корреляций можно выделить корреляцию между стареющим и небелым населением, процентом безопасных домов и бедностью,)
+
+[//]: # (а также степенью загрязнения и смертностью.)
+
+[//]: # ()
+[//]: # (В отсутствие выбросов, для признаков, близких к нормальным ожидается, что коэффициенты корреляции не изменятся сильно.)
+
+[//]: # ()
+[//]: # (Между признаками ***NONW*** и ***POOR*** видна слабая монотонная нелинейность, которая может увеличить коэффициент Спирмена)
+
+[//]: # (относительно Пирсона, однако распределение ***POOR*** имеет выраженный "хвост", из-за чего может увеличится коэффициент)
+
+[//]: # (Пирсона относительно Спирмена. Поэтому в этом случае нельзя сказать об их связи однозначно.)
+
+[//]: # ()
+[//]: # (## Коэффициенты корреляции Спирмена)
+
+[//]: # (```{r})
+
+[//]: # (df.new |>)
+
+[//]: # (  select&#40;-CLIM&#41; |>)
+
+[//]: # (  cor&#40;method = "spearman"&#41; |>)
+
+[//]: # (  corrplot&#40;method = "number", tl.col = "black", tl.srt = 60&#41;)
+
+[//]: # (df.new |>)
+
+[//]: # (  select&#40;-CLIM&#41; |>)
+
+[//]: # (  rstatix::cor_pmat&#40;method = "spearman"&#41;)
+
+[//]: # (```)
+
+[//]: # ()
+[//]: # (По сравнению с коэффициентами Пирсона пропала значимость корреляции между признаками:)
+
+[//]: # ()
+[//]: # (* ***MORT*** --- ***PREC***, ***HOUS***, ***DENS***)
+
+[//]: # (* ***POOR*** --- ***OVR65***)
+
+[//]: # ()
+[//]: # (Вероятнее всего это объясняется меньшей мощностью критерия, применяющего для построения статистики коэффициент Спирмена.)
+
+[//]: # ()
+[//]: # (По сравнению с коэффициентами Пирсона появилась значимость корреляции между признаками:)
+
+[//]: # ()
+[//]: # (* ***NOX*** --- ***EDUC***)
+
+[//]: # ()
+[//]: # (## Частные корреляции смертности с бедностью и образованностью населения за вычетом влияния географического положения &#40;осадков&#41;)
+
+[//]: # (Так как t-test показал зависимость параметров бедности и образованности от географического положения,)
+
+[//]: # (то имеет смысл проверить, сохранятся ли корреляции этих признаков со смертностью, если вычесть влияние осадков.)
+
+[//]: # ()
+[//]: # (Частный коэффициент корреляции между ***MORT*** и ***POOR***:)
+
+[//]: # (```{r})
+
+[//]: # (pcor.test&#40;df.new$MORT, df.new$POOR, df.new$PREC&#41;[1:2])
+
+[//]: # (```)
+
+[//]: # ()
+[//]: # (Частный коэффициент корреляции между ***MORT*** и ***EDUC***:)
+
+[//]: # (```{r})
+
+[//]: # (pcor.test&#40;df.new$MORT, df.new$EDUC, df.new$PREC&#41;[1:2])
+
+[//]: # (```)
+
+[//]: # ()
+[//]: # (Частные коэффициенты корреляции уменьшились по модулю по сравнению с коэффициентами корреляции Пирсона, но всё ещё остались значимыми.)
 
 # Регрессионный анализ
 ```{r}
-df.new |> select(-CLIM) |> scatterPlotMatrix(corrPlotType = "Text",
-                            regressionType = 1,
-                            plotProperties = list(noCatColor = "Indigo"),
-                            slidersPosition = list(dimCount = 10, xStartingDimIndex = 1, yStartingDimIndex = 1),
-                            categoricalCS = "Set1",
-                            controlWidgets = TRUE, height = 1050, width = 1000)
+df.new |>
+  select(-CLIM) |>
+  scatterPlotMatrix(corrPlotType = "Text",
+                    regressionType = 1,
+                    plotProperties = list(noCatColor = "Indigo"),
+                    slidersPosition = list(dimCount = 10, xStartingDimIndex = 1, yStartingDimIndex = 1),
+                    categoricalCS = "Set1",
+                    controlWidgets = TRUE, height = 1050, width = 1000)
 ```
 ### Зависимый признак: ***MORT***
 ### Регрессоры: все остальные признаки
 ```{r}
-linear.model <- lm(MORT ~ . - CLIM, data = df.new)
+# df.new <- df.log |> select(-HC, -SO2, -JANT, -JULT, -TDIFF, -WWDRK, -HUMID) |>
+#         mutate(CLIM = factor(ifelse(PREC > median(PREC), ">.5", "<.5"), levels = c("<.5", ">.5")))
+linear.model <- lm(MORT ~ ., data = df.new)
 summary(linear.model)
 ```
 ### Оценки стандартизованных признаков $\beta$
@@ -507,48 +800,155 @@ linear.model.beta <- lm.beta(linear.model)
 summary(linear.model.beta)
 ```
 
-### Избавление от сильно коррелирующих признаков
-***DENS*** (относительно) сильно коррелирует с ***NONW*** и слабо с ***MORT***
-***OVR65*** сильно коррелирует с ***NONW*** и слабо с ***MORT***
+### Модель, построенная по стандартизованным признакам
 ```{r}
-linear.model <- lm(MORT ~ . - CLIM - DENS - OVR65, data = df.new)
-linear.model.beta <- lm.beta(linear.model)
-summary(linear.model.beta)
+df.scale <- df.new |>
+  select(-CLIM) |>
+  mutate(`CLIMTemper` = as.integer(df.new$CLIM == "<.5")) |>
+  scale() |>
+  as.data.frame()
+linear.model.scale.all <- lm(MORT ~ ., data = df.scale)
+linear.model.scale.all.beta <- lm.beta(linear.model.scale.all)
+summary(linear.model.scale.all.beta)
 ```
 
-### Стандартная ошибка стандартизованных оценок
+### Корреляции стандартизованных оценок коэффициентов регрессии
 ```{r}
-df.scale <- df.new |>  select(-CLIM) |> scale() |> as.data.frame()
-linear.model.scale <- lm(MORT ~ . - DENS - OVR65 - 1, data = df.scale)
-linear.model.scale.beta <- lm.beta(linear.model.scale)
-summary(linear.model.beta)
+resid.scale.all <- linear.model.scale.all.beta$residuals
+sigma2.scale.all <- sum(resid.scale.all^2) / (nrow(df.scale) - ncol(df.scale))
+cov.beta.all <- df.scale |> select(-MORT) |> cor() |> solve() * sigma2.scale.all / nrow(df.scale)
+cov.beta.all |>
+  cov2cor() |>
+  corrplot(method = "number", tl.col = "black", tl.srt = 60)
 ```
 
-### Корреляции стандартизованных оценок
+### Вырожденность признака и частные корреляции
 ```{r}
-linear.model.scale.all <- lm(MORT ~ . - 1, data = df.scale)
-# resid <- linear.model$residuals
-# sigma2 <- sum(resid^2) / (nrow(df.new) - ncol(df.new))
-# cov.b <- df.new |> select(-MORT, -CLIM) |> cov() |> solve() * sigma2 / nrow(df.new)
-resid.scale <- linear.model.scale.all$residuals
-sigma2.scale <- sum(resid.scale^2) / (nrow(df.scale) - ncol(df.scale))
-cov.beta <- df.scale |> select(-MORT) |> cor() |> solve() * sigma2.scale / nrow(df.scale)
-# cov.b |> cov2cor() |> corrplot(method = "number", tl.col = "black", tl.srt = 60)
-cov.beta |> cov2cor() |> corrplot(method = "number", tl.col = "black", tl.srt = 60)
+cbind(ols_vif_tol(linear.model.scale.all), ols_correlations(linear.model.scale.all)) |>
+  as.data.frame() |>
+  select(Variables, Tolerance, Partial)
+```
+Хорошо приближаются линейно через другие признаки ***PREC***, ***OVR65***, ***NONW***, ***POOR*** и ***CLIM***.
+
+Из них кандидаты на удаление:
+- ***CLIM***, так как сильно коррелирует с ***PREC*** и имеет достаточно малую частную корреляцию с предсказываемым признаком.
+- ***OVR65***, так как коррелирует с ***NONW*** и имеет малую частную корреляцию.
+- ***POOR***, так как имеет малую частную корреляцию
+
+### Модель без ***OVR65***, ***POOR***, ***CLIMTemper***
+```{r}
+linear.model.scale <- lm(MORT ~ . - OVR65 - POOR - CLIMTemper, data = df.scale)
+summary(linear.model.scale)
+```
+
+```{r}
+cbind(ols_vif_tol(linear.model.scale), ols_correlations(linear.model.scale)) |>
+  as.data.frame() |>
+  select(Variables, Tolerance, Partial)
+```
+
+Новые кандидаты на удаление за счёт малых частных корреляций:
+- ***POPN***
+- ***HOUS***
+- ***DENS***
+
+Модель после удаления:
+```{r}
+lm.fin <- lm(MORT ~ PREC + EDUC + NONW + NOX, data = df.scale)
+cbind(ols_vif_tol(lm.fin), ols_correlations(lm.fin)) |>
+  as.data.frame() |>
+  select(Variables, Tolerance, Partial)
+summary(lm.fin)
 ```
 
 ## Доверительные эллипсоиды
-```{r}
-plot(ellipse(cov.beta, centre = linear.model.scale.all$coefficients[c("NONW", "OVR65")], level=0.95, npoints = 100), type = "l")
-lines(c(0, 0.4), c(0, 0.4))
+```{r, fig.width = 6, fig.height = 6}
+resid <- lm.fin$residuals
+sigma2 <- sum(resid^2) / (nrow(df.scale) - lm.fin$rank)
+cov.beta <- lm.fin$model |> select(-MORT) |> cor() |> solve() * sigma2 / nrow(df.scale)
+cov.beta |>
+  cov2cor() |>
+  corrplot(method = "number", tl.col = "black", tl.srt = 60)
+confidenceEllipse(lm.fin, which.coef = c("NOX", "NONW"), levels = 0.95, col = "black", xlim = c(0, 0.8), ylim = c(0, 0.8))
+lines(c(-1, 1), c(-1, 1))
 ```
 
-```{r}
-plot(ellipse(cov.beta, centre = linear.model.scale.all$coefficients[c("POOR", "HOUS")], level=0.95, npoints = 100), type = "l")
-lines(c(-0.3, 0.2), c(-0.3, 0.2))
+
+## Пошаговая регрессия
+### Backward
+```{r, fig.height = 8, fig.width = 10}
+ols_step_backward_p(lm(MORT ~ ., data = df.scale))
+lm.backward <- ols_step_backward_p(lm(MORT ~ ., data = df.scale))
+summary(lm.backward$model)
+plot(lm.backward)
 ```
 
+### Forward
+```{r, fig.height = 8, fig.width = 10}
+ols_step_forward_p(lm(MORT ~ ., data = df.scale))
+lm.forward <- ols_step_forward_p(lm(MORT ~ ., data = df.scale))
+summary(lm.forward$model)
+plot(lm.forward)
+```
+
+```{r, fig.height = 8, fig.width = 10}
+plot(ols_step_backward_p(lm(MORT ~ ., data = df.scale), p_val = 1e-6))
+```
+
+## Адекватность модели
 ```{r}
-plot(ellipse(cov.beta, centre = linear.model.scale.all$coefficients[c("POOR", "PREC")], level=0.95, npoints = 100), type = "l")
-lines(c(-0.2, 0.3), c(-0.2, 0.3))
+df.dirty <- df.log |> select(-HC, -SO2, -JANT, -JULT, -TDIFF, -WWDRK, -HUMID) |>
+        mutate(CLIMTemper = ifelse(PREC > median(PREC), 1, 0))
+lm.fin.dirty <- lm.beta(lm(MORT ~ PREC + EDUC + NONW + NOX, data = df.dirty))
+plot(lm.fin.dirty)
+```
+
+## Выбросы
+Ранее за выбросы считались следующие точки.
+```{r}
+sort(outliers)
+```
+Проверим правильно ли они были выбраны.
+
+### Стьюдентизированные остатки vs стандартизованные остатки
+```{r}
+plot(rstandard(lm.fin.dirty), studres(lm.fin.dirty), ylab = "Stud Resid", xlab = "Stand Resid")
+lines(c(-5, 5), c(-5, 5))
+```
+
+### Стьюдентизированные остатки vs рычаги
+```{r, fig.width = 10}
+ols_plot_resid_lev(lm.fin.dirty, threshold = 2)
+```
+
+Посмотрим на выбросы на матричном графике
+```{r}
+df.dirty |>
+  select(NOX, PREC, EDUC, NONW, MORT) |>
+  scatterPlotMatrix(corrPlotType = "Text",
+                    regressionType = 0,
+                    plotProperties = list(noCatColor = "Indigo"),
+                    height = 820, width = 860)
+```
+
+### Переопределение выбросов
+```{r}
+outliers.new <- c(32)
+df.fin <- df.dirty[-outliers.new,]
+lm.fin.fin <- lm.beta(lm(MORT ~ NOX + EDUC + NONW + PREC, data = df.fin))
+summary(lm.fin.fin)
+```
+
+## Предсказания
+```{r, R.options = list(width = 10000)}
+NOX.values <- c(small = 0.8, med = 2, large = 5)
+PREC.values <- c(small = 15, med = 35, large = 55)
+EDUC.values <- c(small = 9, med = 11, large = 13)
+NONW.values <- c(small = 0, med = 2, large = 3.5)
+vals.to.predict <- data.frame(expand.grid(NOX = NOX.values, PREC = PREC.values,
+                                          EDUC = EDUC.values, NONW = NONW.values))
+pred <- cbind(predict(lm.fin.fin, vals.to.predict, interval = "confidence"),
+              predict(lm.fin.fin, vals.to.predict, interval = "prediction")[,-1])
+colnames(pred) <- c("Fitted", "Lower conf bound", "Upper conf bound", "Lower pred bound", "Upper pred bound")
+pred
 ```
