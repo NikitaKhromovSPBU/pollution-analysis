@@ -1,0 +1,255 @@
+---
+title: "Анализ данных pollutio"
+output:
+html_notebook:
+code_folding: hide
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+
+library(ppcor)
+library(ggplot2)
+library(ggpubr)
+library(dplyr)
+library(GGally)
+library(scatterPlotMatrix)
+library(corrplot)
+library(psych)
+library(nortest)
+library(confintr)
+library(rstatix)
+library(corrplot)
+library(lm.beta)
+library(ellipse)
+library(olsrr)
+library(car)
+library(MASS)
+
+select <- dplyr::select
+```
+
+# Загрука данных
+```{r}
+df <- read.csv("../stat2021_sm/POLLUTIO.STD/POLLUTIO.txt", sep = "\t", dec = ",")
+df.log <- df |>
+  mutate(DENS_LOG = log(DENS), NONW_LOG = log(NONW), POOR_LOG = log(POOR), HC_LOG = log(HC), NOX_LOG = log(NOX), SO2_LOG = log(SO2)) |>
+  select(-DENS, -NONW, -POOR, -HC, -NOX, -SO2)
+```
+
+# Регрессионный анализ
+### Scatterplot для всех признаков
+```{r}
+df.new <- df.log |>
+  select(-HC_LOG, -SO2_LOG, -JANT, -JULT, -WWDRK, -HUMID) |>
+  mutate(CLIMTemper = ifelse(PREC > median(PREC), 1, 0))
+df.new |>
+  scatterPlotMatrix(corrPlotType = "Text",
+                    regressionType = 1,
+                    plotProperties = list(noCatColor = "Indigo"),
+                    slidersPosition = list(dimCount = 10, xStartingDimIndex = 1, yStartingDimIndex = 1),
+                    categoricalCS = "Set1",
+                    controlWidgets = TRUE, height = 1050, width = 1000)
+```
+
+### Зависимый признак: ***MORT***
+### Регрессоры: все остальные признаки
+```{r}
+linear.model <- lm(MORT ~ ., data = df.new)
+summary(linear.model)
+```
+
+### Оценки стандартизованных признаков $\beta$
+```{r}
+linear.model.beta <- lm.beta(linear.model)
+summary(linear.model.beta)
+```
+
+### Модель, построенная по стандартизованным признакам
+```{r}
+df.scale <- df.new |>
+  scale() |>
+  as.data.frame()
+linear.model.scale.all.beta <- lm.beta(lm(MORT ~ ., data = df.scale))
+summary(linear.model.scale.all.beta)
+```
+Подтвердили, что $\beta$ действительно считаются как оценки регрессии по стандартизованным признакам, а также
+посчитали стандартные отклонения от них
+
+### Корреляции стандартизованных оценок коэффициентов регрессии
+```{r}
+resid.scale.all <- linear.model.scale.all.beta$residuals
+sigma2.scale.all <- sum(resid.scale.all^2) / (nrow(df.scale) - ncol(df.scale))
+cov.beta.all <- df.scale |> select(-MORT) |> cor() |> solve() * sigma2.scale.all / nrow(df.scale)
+cov.beta.all |>
+  cov2cor() |>
+  corrplot(method = "number", tl.col = "black", tl.srt = 60)
+```
+Есть несколько сильно коррелирующих признаков.
+
+### Вырожденность признака и частные корреляции
+```{r}
+cbind(ols_vif_tol(linear.model.scale.all.beta), ols_correlations(linear.model.scale.all.beta)) |>
+  as.data.frame() |>
+  select(Variables, Tolerance, Partial, VIF)
+```
+Хорошо приближаются линейно через другие признаки ***PREC***, ***OVR65***, ***NONW***, ***POOR*** и ***CLIM***.
+
+Из них кандидаты на удаление:
+- ***CLIM***, так как сильно коррелирует с ***PREC*** и имеет достаточно малую частную корреляцию с предсказываемым признаком.
+- ***OVR65***, так как коррелирует с ***NONW*** и имеет малую частную корреляцию.
+
+### Модель без ***OVR65***, ***CLIMTemper***
+```{r}
+linear.model.scale <- lm(MORT ~ . - OVR65 - CLIMTemper, data = df.scale)
+summary(linear.model.scale)
+```
+
+```{r}
+cbind(ols_vif_tol(linear.model.scale), ols_correlations(linear.model.scale)) |>
+  as.data.frame() |>
+  select(Variables, Tolerance, Partial, VIF)
+```
+
+Новые кандидаты на удаление за счёт малых частных корреляций:
+- ***POPN***
+- ***DENS***
+- ***POOR***
+
+Также удалили признак ***HOUS*** так как он не значим в модели.
+
+Модель после удаления:
+```{r}
+lm.fin <- lm(MORT ~ PREC + EDUC + NONW_LOG + NOX_LOG, data = df.scale)
+cbind(ols_vif_tol(lm.fin), ols_correlations(lm.fin)) |>
+  as.data.frame() |>
+  select(Variables, Tolerance, Partial)
+summary(lm.fin)
+```
+
+## Доверительные эллипсоиды
+Посмотрим на корреляции между (стандартизованными) коэффициентами для оставшихся признаков
+```{r, fig.width = 6, fig.height = 6}
+resid <- lm.fin$residuals
+sigma2 <- sum(resid^2) / (nrow(df.scale) - lm.fin$rank)
+cov.beta <- lm.fin$model |> select(-MORT) |> cor() |> solve() * sigma2 / nrow(df.scale)
+cov.beta |>
+  cov2cor() |>
+  corrplot(method = "number", tl.col = "black", tl.srt = 60)
+```
+Самая большая по модулю корреляция между признаками ***PREC*** и ***EDUC***.
+Посмотрим на доверительный эллипс для стандартизованных коэффициентов этих признаков
+```{r}
+confidenceEllipse(lm.fin, which.coef = c("PREC", "EDUC"), levels = 0.95, col = "black", xlim = c(0, 0.7), ylim = c(-0.7, 0))
+lines(c(0, 0.8), c(0, -0.8))
+```
+Хорошая ситуация: признаки не являются супрессорами и нельзя сказать какой из них влияет на модель больше.
+
+## Пошаговая регрессия
+### Backward
+```{r, fig.height = 8, fig.width = 10}
+ols_step_backward_p(lm(MORT ~ ., data = df.scale))
+lm.backward <- ols_step_backward_p(lm(MORT ~ ., data = df.scale))
+summary(lm.backward$model)
+plot(lm.backward)
+```
+
+### Forward
+```{r, fig.height = 8, fig.width = 10}
+ols_step_forward_p(lm(MORT ~ ., data = df.scale))
+lm.forward <- ols_step_forward_p(lm(MORT ~ ., data = df.scale))
+summary(lm.forward$model)
+plot(lm.forward)
+```
+
+В модели, полученной с помощью пошагового алгоритма Forward, осталось меньше признаков и меньший $R^2_{adj}$, чем в модели, полученной Backward.
+
+### Метрики Backward, если брать все признаки
+```{r, fig.height = 8, fig.width = 10}
+plot(ols_step_backward_p(lm(MORT ~ ., data = df.scale), p_val = 1e-6))
+```
+
+## Финальная модель
+Все коэффициенты в модели Forward, кроме ***CLIM***, оказались значимы, а в Backward остались незначимые признаки, поэтому в итоге решено взять модель, полученную Forward, но без ***CLIM***, так как он сильно коррелирует с　***PREC*** и является незначимым в модели при уровне значимости 0.05.
+```{r}
+df.dirty <- df.log |>
+  select(-HC_LOG, -SO2_LOG, -JANT, -JULT, -WWDRK, -HUMID) |>
+  mutate(CLIMTemper = ifelse(PREC > median(PREC), 1, 0))
+lm.fin.dirty <- lm.beta(lm(MORT ~ PREC + EDUC + NONW_LOG + NOX_LOG, data = df.dirty[-32,]))
+summary(lm.fin.dirty)
+```
+
+## Адекватность модели
+Что показывают графики:
+1. *Остатки* vs *Предсказания* показывает гомоскедастичность и выбросы. В нашем случае нарушений гомоскедастичности не видно,
+точки подозрительные на выбросы: 28 и 32.
+2. *NP-plot* показывает нормальность остатков. В нашем случае нормальность нарушают точки 28 и 32. Нормальность остатков нужна
+для того, чтобы оценки коэффициентов по МНК были ОМП, и чтобы статистические гипотезы (например проверка значимости
+коэффициентов) были не асимптотическими, а точными.
+3. *Корень модуля стандартизированных остатков* vs *Предсказания* показывает гомоскедастичность, при этом устойчив к
+выбросам.
+```{r}
+plot(lm.fin.dirty, which = 1:3)
+```
+
+## Анализ выбросов
+### Стьюдентизированные остатки vs стандартизованные остатки
+График может показать выбросы, так как без выбросов стьюдентизированные остатки (deleted residuals поделённые на оценку
+их дисперсии) должны слабо отличаться от стандартизованных остатков в большую по модулю сторону.
+Красным проведена линия регрессии этих остатков.
+```{r}
+plot(rstandard(lm.fin.dirty), studres(lm.fin.dirty), ylab = "Stud Resid", xlab = "Stand Resid")
+abline(line(studres(lm.fin.dirty) ~ rstandard(lm.fin.dirty))$coefficients, col = "red")
+```
+В нашем случае выявить выбросы по этому графику затруднительно.
+
+### Стьюдентизированные остатки vs рычаги
+По горизонтальной оси отложены значения рычагов индивидов (переходит в расстояние Махаланобиса), по вертикальной ---
+стьюдентизированные остатки (переходит в расстояние Кука).
+```{r, fig.width = 10}
+ols_plot_resid_lev(lm.fin.dirty, threshold = 2)
+```
+За две сигмы вышло 3 значения, что является 5% выборки и соответствует тому, что 5% элементов (примерно) нормальной выборки будут
+выходить за две сигмы.
+Значения, вышедшие за правую границу, отстают от остальной выборки не так сильно, чтобы можно было назвать их выбросами.
+Однако, значение 28 выходит за три сигмы, а значение 32 близко к трём сигмам по вертикали и выходит за обе границы, значит
+эти значения можно считать выбросами.
+
+
+### Посмотрим на выбросы на матричном графике
+```{r}
+df.dirty |>
+  select(NOX_LOG, PREC, EDUC, NONW_LOG, MORT) |>
+  scatterPlotMatrix(corrPlotType = "Text",
+                    regressionType = 0,
+                    plotProperties = list(noCatColor = "Indigo"),
+                    height = 820, width = 860)
+```
+Точка 32 выделяется во всех графиках с ***PREC***, что подтверждает, что это выброс.
+Будем считать за выбросы точки 28 и 32.
+
+### Удаление выбросов из модели
+```{r}
+outliers.new <- c(28, 32)
+df.fin <- df.dirty[-outliers.new,]
+lm.fin.fin <- lm.beta(lm(MORT ~ NOX_LOG + EDUC + NONW_LOG + PREC, data = df.fin))
+summary(lm.fin.fin)
+```
+$R^2_{adj}$ вырос (до удаления выбросов он был 0.68), все коэффициенты модели значимы.
+
+## Предсказания
+Предскажем значение смертности в городах, которые были выкинуты как выбросы.
+```{r, R.options = list(width = 10000)}
+vals.to.predict <- data.frame(df.dirty[outliers.new,]) |> select(NOX_LOG, PREC, EDUC, NONW_LOG)
+pred <- cbind(predict(lm.fin.fin, vals.to.predict, interval = "confidence"),
+              predict(lm.fin.fin, vals.to.predict, interval = "prediction")[, -1])
+colnames(pred) <- c("Fitted", "Lower conf bound", "Upper conf bound", "Lower pred bound", "Upper pred bound")
+pred
+```
+
+Истинные значения смертности в этих городах (первое значение для 28, второе - для 32):
+```{r}
+df[outliers.new, "MORT"]
+```
+В обоих случаях действительная смертность ниже, чем нижняя граница предсказательного интервала, что подтверждает то, что
+эти города являются выбросами по отношению к модели.
